@@ -1,0 +1,4 @@
+vendor
+main
+go.sum
+.idea/**
