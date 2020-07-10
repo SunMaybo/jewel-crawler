@@ -5,8 +5,23 @@ import (
 	"github.com/SunMaybo/jewel-crawler/temp"
 )
 
+type CollectEvent struct {
+	Task task.Task
+	Temp temp.Temp
+}
+type ParserEvent struct {
+	Task    task.Task
+	Temp    temp.Temp
+	Content string
+}
+type StorageEvent struct {
+	Task    task.Task
+	Channel string
+	Data    map[string]interface{}
+}
+
 type Crawler interface {
-	Collect(task task.Task, temp temp.Temp) (string, error)
-	Parser(task task.Task, temp temp.Temp, content string) (map[string]interface{}, error)
-	Storage(task task.Task, data map[string]interface{}) error
+	Collect(event CollectEvent) (string, error)
+	Parser(event ParserEvent) (map[string]interface{}, error)
+	Storage(event StorageEvent) error
 }

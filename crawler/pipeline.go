@@ -14,14 +14,16 @@ type PipeLine struct {
 	reportFunc   map[ReportType]func(report Report) error
 	crawlerInter map[task.CrawlerName]Crawler
 	tempStorage  *temp.TempStorage
+	channel      string
 }
 
-func New(tempStorage *temp.TempStorage) *PipeLine {
+func New(channel string, tempStorage *temp.TempStorage) *PipeLine {
 	return &PipeLine{
 		filterFunc:   make(map[FilterType]func(filter Filter) bool),
 		reportFunc:   make(map[ReportType]func(report Report) error),
 		crawlerInter: make(map[task.CrawlerName]Crawler),
 		tempStorage:  tempStorage,
+		channel:      channel,
 	}
 }
 
@@ -151,7 +153,10 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 			}
 
 		}
-		content, err := crawler.Collect(task, temp)
+		content, err := crawler.Collect(CollectEvent{
+			Task: task,
+			Temp: temp,
+		})
 
 		//后置上报
 		if reportFunc, ok := p.reportFunc[CrawlerAfterReport]; ok {
@@ -213,7 +218,11 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		}
 
 		//数据解析
-		data, err := crawler.Parser(task, temp, content)
+		data, err := crawler.Parser(ParserEvent{
+			Task:    task,
+			Temp:    temp,
+			Content: content,
+		})
 
 		//解析后置上报
 		if reportFunc, ok := p.reportFunc[ParserAfterReport]; ok {
@@ -276,7 +285,11 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 
 		}
 
-		err = crawler.Storage(task, data)
+		err = crawler.Storage(StorageEvent{
+			Task:    task,
+			Data:    data,
+			Channel: p.channel,
+		})
 
 		//存储后置上报
 		if reportFunc, ok := p.reportFunc[StorageAfterReport]; ok {

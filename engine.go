@@ -15,22 +15,22 @@ type CrawlerEngine struct {
 	redis    *redis.Client
 	limit    *limit.ConcurrentLimit
 	Pipeline *crawler.PipeLine
+	channel  string
 }
 
-func New(redis *redis.Client, concurrents int) *CrawlerEngine {
+func New(redis *redis.Client, channel string, concurrent int) *CrawlerEngine {
 	return &CrawlerEngine{
 		redis:    redis,
-		limit:    limit.NewConcurrentLimit(concurrents),
-		Pipeline: crawler.New(temp.NewTempStorage(redis)),
+		limit:    limit.NewConcurrentLimit(concurrent),
+		Pipeline: crawler.New(channel, temp.NewTempStorage(redis)),
 	}
 }
 
 //开启
-func (p *CrawlerEngine) Start(ctx context.Context, channel string, maxExecuteCount int) {
-
+func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 	for {
 		t := task.Task{}
-		message := <-p.redis.Subscribe(ctx, channel).Channel()
+		message := <-p.redis.Subscribe(ctx, p.channel).Channel()
 		err := json.Unmarshal([]byte(message.Payload), &t)
 		if err != nil {
 			panic(err)
@@ -44,7 +44,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, channel string, maxExecuteCou
 			err := p.Pipeline.Invoke(ctx, task)
 			if err != nil {
 				task.Retry += 1
-				err := p.Push(ctx, channel, task)
+				err := p.push(ctx, p.channel, task)
 				if err != nil {
 					zap.S().Fatal(err)
 				}
@@ -54,7 +54,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, channel string, maxExecuteCou
 	}
 
 }
-func (p *CrawlerEngine) Push(ctx context.Context, channel string, task task.Task) error {
+func (p *CrawlerEngine) push(ctx context.Context, channel string, task task.Task) error {
 	taskStr, _ := json.Marshal(task)
 	return p.redis.Publish(ctx, channel, taskStr).Err()
 }
