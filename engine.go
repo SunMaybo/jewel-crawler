@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/SunMaybo/jewel-crawler/crawler"
 	"github.com/SunMaybo/jewel-crawler/limit"
+	logs "github.com/SunMaybo/jewel-crawler/logs"
 	"github.com/SunMaybo/jewel-crawler/task"
 	"github.com/SunMaybo/jewel-crawler/temp"
 	"github.com/go-redis/redis/v8"
@@ -16,6 +17,10 @@ type CrawlerEngine struct {
 	limit    *limit.ConcurrentLimit
 	Pipeline *crawler.PipeLine
 	channel  string
+}
+
+func SetLogLevel(level string) {
+	logs.GetLog(level)
 }
 
 func New(redis *redis.Client, channel string, concurrent int) *CrawlerEngine {

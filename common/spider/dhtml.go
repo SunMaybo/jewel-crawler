@@ -2,11 +2,11 @@ package spider
 
 import (
 	"context"
+	"github.com/SunMaybo/jewel-crawler/logs"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/device"
-	"go.uber.org/zap"
 )
 
 type DhtmlSpider struct {
@@ -40,7 +40,7 @@ func (d *DhtmlSpider) Do(request Request) (Response, error) {
 			return err
 		}),
 	); err != nil {
-		zap.S().Warnf("chromedp error: %s", err)
+		logs.S.Warnf("chromedp error: %s", err)
 		return Response{}, err
 	}
 	return Response{

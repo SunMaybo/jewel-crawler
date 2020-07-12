@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/SunMaybo/jewel-crawler/logs"
 	"go.uber.org/zap"
 	"gopkg.in/resty.v1"
 	"regexp"
@@ -84,7 +85,7 @@ func getResponseCharset(response *resty.Response) string {
 				findResult := reg.FindStringSubmatch(charsetStr)
 				if findResult != nil && len(findResult) > 1 && findResult[1] != "" && strings.Index("gbk,gb18030,gb2312,utf8,utf-8,ansi,big5,unicode,ascii", strings.ToLower(findResult[1])) != -1 {
 					charsetStr = findResult[1]
-					zap.S().Infow("response header find charset ------>", "charset", charsetStr)
+					logs.S.Infow("response header find charset ------>", "charset", charsetStr)
 					return charsetStr
 				}
 			}

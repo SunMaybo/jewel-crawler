@@ -2,7 +2,7 @@ package spider
 
 import (
 	"github.com/SunMaybo/jewel-crawler/common/spider/charset"
-	"go.uber.org/zap"
+	"github.com/SunMaybo/jewel-crawler/logs"
 	"regexp"
 	"strings"
 	"time"
@@ -56,17 +56,17 @@ func (r *Response) recognitionCharsetFormat() string {
 		findResult := reg.FindStringSubmatch(string(r.Body))
 		if findResult != nil && len(findResult) > 1 && findResult[1] != "" && strings.Index("gbk,gb18030,gb2312,utf8,utf-8,ansi,big5,unicode,ascii", strings.ToLower(findResult[1])) != -1 {
 			charsetStr = findResult[1]
-			zap.S().Info("find article code is ------>", charsetStr)
+			logs.S.Info("find article code is ------>", charsetStr)
 		} else {
 			cs, err := charset.GuessBytes(r.GetBytes())
 			if err != nil {
-				zap.S().Warn("charsetutil cannot find article encode  --------->", err.Error())
+				logs.S.Warn("charsetutil cannot find article encode  --------->", err.Error())
 			} else {
 				charsetStr = cs.Charset()
 			}
 		}
 	}
-	zap.S().Infow("article encoding ----->", "charset", charsetStr)
+	logs.S.Infow("article encoding ----->", "charset", charsetStr)
 	return charsetStr
 }
 

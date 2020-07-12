@@ -6,7 +6,11 @@ import (
 	"strings"
 )
 
-var LOGGER *zap.Logger
+var S *zap.SugaredLogger
+
+func init() {
+	GetLog("warn")
+}
 
 func GetLog(level string) {
 	var atomicLevel = zap.NewAtomicLevelAt(zapcore.DebugLevel)
@@ -37,6 +41,5 @@ func GetLog(level string) {
 		},
 	}
 	logger, _ := cfg.Build()
-	zap.ReplaceGlobals(logger)
-	LOGGER = logger
+	S = logger.Sugar()
 }
