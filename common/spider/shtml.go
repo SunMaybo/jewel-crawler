@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/SunMaybo/jewel-crawler/common/spider/charset"
 	"github.com/SunMaybo/jewel-crawler/logs"
-	"go.uber.org/zap"
 	"gopkg.in/resty.v1"
 	"regexp"
 	"strings"
@@ -24,27 +24,38 @@ func NewShtmlSpider(size int) *ShtmlSpider {
 	}
 }
 func (s *ShtmlSpider) Do(request Request) (Response, error) {
-	resp, err := s.getResponse(request)
-	if err != nil {
-		zap.S().Errorf("请求数据出错", "error", err.Error())
-		return Response{}, err
+	if request.Retry <= 0 {
+		request.Retry = 3
 	}
-	if resp.StatusCode() >= 200 {
-		readerCloser := resp.RawBody()
-		defer readerCloser.Close()
-		buff, err := ReadAll(readerCloser, s.size)
+	var err error
+	for i := 0; i < request.Retry; i++ {
+		var resp *resty.Response
+		resp, err = s.getResponse(request)
 		if err != nil {
-			zap.S().Errorf("读取响应数据出错", "err:", err.Error())
-			return Response{}, err
+			logs.S.Errorw("请求数据出错", "error", err.Error(), "retry", i+1)
+			continue
 		}
-		return Response{
-			RedirectUrl: resp.RawResponse.Request.URL.String(),
-			Charset:     getResponseCharset(resp),
-			Body:        buff,
-			SpiderType:  s.spiderType,
-		}, err
+		if resp.StatusCode() >= 200 {
+			readerCloser := resp.RawBody()
+			defer readerCloser.Close()
+			var buff []byte
+			buff, err = ReadAll(readerCloser, s.size)
+			if err != nil {
+				logs.S.Errorw("读取响应数据出错", "err:", err.Error(), "retry", i+1)
+				continue
+			}
+			encode := getResponseCharset(resp)
+			return Response{
+				RedirectUrl: resp.RawResponse.Request.URL.String(),
+				charset:     encode,
+				body:        charset.MustDecodeBytes(buff, encode),
+				SpiderType:  s.spiderType,
+			}, nil
+		} else {
+			return Response{}, errors.New(fmt.Sprintf("shtml rquest err statusCode:%d", resp.StatusCode()))
+		}
 	}
-	return Response{}, errors.New(fmt.Sprintf("shtml rquest err statusCode:%d", resp.StatusCode()))
+	return Response{}, err
 }
 
 func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
@@ -55,10 +66,7 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(15))
 	client.SetTimeout(request.Timeout)
-	if request.Retry <= 0 {
-		request.Retry = 3
-	}
-	client.SetRetryCount(request.Retry)
+	client.SetRetryCount(0)
 	client.SetDoNotParseResponse(true)
 	r := client.R()
 	r.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")

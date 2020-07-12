@@ -14,16 +14,16 @@ type PipeLine struct {
 	reportFunc   map[ReportType]func(report Report) error
 	crawlerInter map[task.CrawlerName]Crawler
 	tempStorage  *temp.TempStorage
-	channel      string
+	queue      string
 }
 
-func New(channel string, tempStorage *temp.TempStorage) *PipeLine {
+func New(queue string, tempStorage *temp.TempStorage) *PipeLine {
 	return &PipeLine{
 		filterFunc:   make(map[FilterType]func(filter Filter) bool),
 		reportFunc:   make(map[ReportType]func(report Report) error),
 		crawlerInter: make(map[task.CrawlerName]Crawler),
 		tempStorage:  tempStorage,
-		channel:      channel,
+		queue:      queue,
 	}
 }
 
@@ -126,7 +126,7 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		if tsid != "" {
 			temp, err = p.tempStorage.Get(ctx, tsid)
 			if err != nil && redis.Nil != err {
-				logs.S.Errorf("redis err", "message", err.Error())
+				logs.S.Errorw("redis err", "message", err.Error())
 				return err
 			}
 		}
@@ -149,7 +149,7 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 				ReportType: CrawlerBeforeReport,
 			})
 			if err != nil {
-				logs.S.Warnf("crawler before report err", "message", err.Error())
+				logs.S.Warnw("crawler before report err", "message", err.Error())
 			}
 
 		}
@@ -166,21 +166,21 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 				ReportType: CrawlerAfterReport,
 			})
 			if err != nil {
-				logs.S.Warnf("crawler after report err", "message", err.Error())
+				logs.S.Warnw("crawler after report err", "message", err.Error())
 			}
 
 		}
 
 		if err != nil {
-			logs.S.Warnf("crawler err", "crawler_name", task.CrawlerName, "global_id",
+			logs.S.Warnw("crawler err", "crawler_name", task.CrawlerName, "global_id",
 				task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId,
-				"crawler_url", task.CrawlerUrl, "interval", time.Now().Sub(start).Milliseconds(), "message", err.Error())
+				"crawler_url", task.CrawlerUrl, "interval", time.Since(start).String(), "message", err.Error())
 			return err
 		}
 
-		logs.S.Infof("crawler success", "crawler_name", task.CrawlerName, "global_id", task.GlobalId,
+		logs.S.Infow("crawler success", "crawler_name", task.CrawlerName, "global_id", task.GlobalId,
 			"parent_id", task.ParentId, "task_id", task.TaskId, "crawler_url",
-			task.CrawlerUrl, "interval", time.Now().Sub(start).Milliseconds())
+			task.CrawlerUrl, "interval", time.Since(start).String())
 
 		//抓取后置过滤
 		if filterFunc, ok := p.filterFunc[CrawlerAfterFilter]; ok {
@@ -212,7 +212,7 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 				ReportType: ParserBeforeReport,
 			})
 			if err != nil {
-				logs.S.Warnf("parser before report err", "message", err.Error())
+				logs.S.Warnw("parser before report err", "message", err.Error())
 			}
 
 		}
@@ -232,21 +232,21 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 				ReportType: ParserAfterReport,
 			})
 			if err != nil {
-				logs.S.Warnf("parser after report err", "message", err.Error())
+				logs.S.Warnw("parser after report err", "message", err.Error())
 			}
 
 		}
 
 		if err != nil {
-			logs.S.Errorf("parser err", "crawler_name", task.CrawlerName, "global_id", task.GlobalId,
+			logs.S.Errorw("parser err", "crawler_name", task.CrawlerName, "global_id", task.GlobalId,
 				"parent_id", task.ParentId, "task_id", task.TaskId, "crawler_url", task.CrawlerUrl,
-				"interval", time.Now().Sub(start).Milliseconds(), "message", err.Error())
+				"interval", time.Since(start).String(), "message", err.Error())
 			return err
 		}
 
-		logs.S.Infof("parser success", "crawler_name", task.CrawlerName, "global_id", task.GlobalId,
+		logs.S.Infow("parser success", "crawler_name", task.CrawlerName, "global_id", task.GlobalId,
 			"parent_id", task.ParentId, "task_id", task.TaskId, "crawler_url", task.CrawlerUrl,
-			"interval", time.Now().Sub(start).Milliseconds())
+			"interval", time.Since(start).String())
 
 		//解析后置过滤
 		if filterFunc, ok := p.filterFunc[ParserAfterFilter]; ok {
@@ -280,15 +280,16 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 				ReportType: StorageBeforeReport,
 			})
 			if err != nil {
-				logs.S.Warnf("storage before report err", "message", err.Error())
+				logs.S.Warnw("storage before report err", "message", err.Error())
 			}
 
 		}
 
 		err = crawler.Storage(StorageEvent{
-			Task:    task,
-			Data:    data,
-			Channel: p.channel,
+			Task:        task,
+			Data:        data,
+			Queue:     p.queue,
+			TempStorage: p.tempStorage,
 		})
 
 		//存储后置上报
@@ -299,19 +300,19 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 				Error:      err,
 			})
 			if err != nil {
-				logs.S.Warnf("storage after report err", "message", err.Error())
+				logs.S.Warnw("storage after report err", "message", err.Error())
 			}
 
 		}
 		if err != nil {
-			logs.S.Warnf("storage err", "crawler_name", task.CrawlerName, "global_id",
+			logs.S.Warnw("storage err", "crawler_name", task.CrawlerName, "global_id",
 				task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId,
-				"crawler_url", task.CrawlerUrl, "interval", time.Now().Sub(start).Milliseconds(), "message", err.Error())
+				"crawler_url", task.CrawlerUrl, "interval", time.Since(start).String(), "message", err.Error())
 			return err
 		}
-		logs.S.Infof("storage success", "crawler_name", task.CrawlerName, "global_id",
+		logs.S.Infow("storage success", "crawler_name", task.CrawlerName, "global_id",
 			task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId,
-			"crawler_url", task.CrawlerUrl, "interval", time.Now().Sub(start).Milliseconds())
+			"crawler_url", task.CrawlerUrl, "interval", time.Since(start).String())
 		//存储后置过滤
 		if filterFunc, ok := p.filterFunc[StorageAfterFilter]; ok {
 			if filterFunc(Filter{
@@ -325,7 +326,7 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		}
 		return nil
 	} else {
-		logs.S.Warnf("no grab template or grab name is illegal", "crawler_name", task.CrawlerName)
+		logs.S.Warnw("no grab template or grab name is illegal", "crawler_name", task.CrawlerName)
 		return nil
 	}
 	return nil

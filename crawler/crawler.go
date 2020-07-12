@@ -15,9 +15,10 @@ type ParserEvent struct {
 	Content string
 }
 type StorageEvent struct {
-	Task    task.Task
-	Channel string
-	Data    map[string]interface{}
+	Task        task.Task
+	Queue     string
+	Data        map[string]interface{}
+	TempStorage *temp.TempStorage
 }
 
 type Crawler interface {

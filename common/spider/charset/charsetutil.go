@@ -97,6 +97,17 @@ func DecodeReader(s io.Reader, enc string) (string, error) {
 	}
 	return string(bytes), nil
 }
+func DecodeReaderBytes(s io.Reader, enc string) ([]byte, error) {
+	reader, err := charset.NewReaderLabel(enc, s)
+	if err != nil {
+		return nil, err
+	}
+	bytes, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
 
 // MustDecodeReader converts given Reader to a UTF-8 string and panics if errros occur.
 func MustDecodeReader(s io.Reader, enc string) string {
@@ -111,8 +122,8 @@ func DecodeBytes(s []byte, enc string) (string, error) {
 }
 
 // MustDecodeBytes converts given bytes to a UTF-8 string and panics if errros occur.
-func MustDecodeBytes(s []byte, enc string) string {
-	ret, err := DecodeReader(bytes.NewReader(s), enc)
+func MustDecodeBytes(s []byte, enc string) []byte {
+	ret, err := DecodeReaderBytes(bytes.NewReader(s), enc)
 	panicIfError(err)
 	return ret
 }

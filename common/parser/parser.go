@@ -11,7 +11,7 @@ func Parser(content, pattern string) (interface{}, error) {
 	if response.Data != nil {
 		return response.Data, nil
 	} else {
-		logs.S.Warnf("parser error ", "response", response)
+		logs.S.Warnw("parser error ", "response", response)
 		return nil, errors.New("parser error data is nil")
 	}
 }

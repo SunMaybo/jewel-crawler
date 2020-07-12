@@ -24,7 +24,7 @@ type Task struct {
 	ContentType   string                 `json:"content_type"`
 	Method        string                 `json:"method"`
 	Param         string                 `json:"param"`
-	Header        map[string]interface{} `json:"header"`
+	Header        map[string]string      `json:"header"`
 	Retry         int                    `json:"retry"`
 	Total         int                    `json:"total"`
 	Timeout       time.Duration          `json:"timeout"`
@@ -41,10 +41,10 @@ type ChildTask struct {
 	ContentType   string                 `json:"content_type"`
 	Method        string                 `json:"method"`
 	Param         string                 `json:"param"`
-	Header        map[string]interface{} `json:"header"`
+	Header        map[string]string `json:"header"`
 }
 
-func (t *Task) Next(ctx context.Context, channel string, child ChildTask) error {
+func (t *Task) Next(ctx context.Context, queue string, child ChildTask) error {
 	t.ParentId = t.TaskId
 	t.TaskId = common.GenerateRandomID()
 	t.Time = time.Now().Unix()
@@ -60,5 +60,5 @@ func (t *Task) Next(ctx context.Context, channel string, child ChildTask) error 
 	t.Param = child.Param
 	t.TinyExtras = child.TinyExtras
 	buff, _ := json.Marshal(t)
-	return t.redis.Publish(ctx, channel, string(buff)).Err()
+	return t.redis.LPush(ctx, queue, string(buff)).Err()
 }

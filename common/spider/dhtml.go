@@ -40,11 +40,11 @@ func (d *DhtmlSpider) Do(request Request) (Response, error) {
 			return err
 		}),
 	); err != nil {
-		logs.S.Warnf("chromedp error: %s", err)
+		logs.S.Warnw("chromedp error: %s", err)
 		return Response{}, err
 	}
 	return Response{
-		Body:       []byte(res),
+		body:       []byte(res),
 		SpiderType: d.spiderType,
 	}, nil
 }

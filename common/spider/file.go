@@ -3,6 +3,7 @@ package spider
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/hex"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"net/http"
 	"net/url"
@@ -30,12 +31,13 @@ func (f *FileSpider) Do(request Request) (Response, error) {
 		body, err = f.getResponse(request)
 		if err == nil {
 			resp := Response{
-				Body:       body,
+				body:       body,
 				SpiderType: f.spiderType,
+				charset:    recognitionFileFormat(body),
 			}
 			return resp, nil
 		} else {
-			logs.S.Warnf("retry request err", "url", request.Url, "err", err.Error(), "retry", i+1)
+			logs.S.Warnw("retry request err", "url", request.Url, "err", err.Error(), "retry", i+1)
 		}
 	}
 	return Response{}, err
@@ -59,7 +61,7 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 	client := &http.Client{Timeout: request.Timeout, Transport: netTransport}
 	req, err := http.NewRequest(request.Param, request.Url, bytes.NewReader([]byte(request.Param)))
 	if err != nil {
-		logs.S.Errorf("请求数据出错", "error", err.Error())
+		logs.S.Errorw("请求数据出错", "error", err.Error())
 		return nil, err
 	}
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
@@ -70,14 +72,50 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 	}
 	response, err := client.Do(req)
 	if err != nil {
-		logs.S.Errorf("请求超时", "error", err.Error())
+		logs.S.Errorw("请求超时", "error", err.Error())
 		return nil, err
 	}
 	defer response.Body.Close()
 	data, err := ReadAll(response.Body, f.size)
 	if err != nil {
-		logs.S.Errorf("读取响应数据出错", "err:", err.Error())
+		logs.S.Errorw("读取响应数据出错", "err:", err.Error())
 		return nil, err
 	}
 	return data, nil
+}
+
+var imageTypeMap = map[string]string{
+	"0d0a1a0a": "png",
+	"ff":       "jpg",
+	"424d":     "bmp",
+	"474946":   "gif",
+	"574542":   "webp",
+	"0000":     "ico",
+	"42":       "tiff",
+	"4D4D":     "tif",
+	"4949":     "tif",
+}
+
+// 识别file格式
+func recognitionFileFormat(content []byte) string {
+	sliceContent1 := content[4:8]
+	sliceContent2 := content[0:1]
+	sliceContent3 := content[0:2]
+	sliceContent4 := content[0:3]
+	sliceContent5 := content[8:11]
+	sliceContent6 := content[0:2]
+	sliceContent7 := content[2:3]
+	sliceContent8 := content[0:2]
+
+	var content_list = [...][]byte{sliceContent1, sliceContent2, sliceContent3, sliceContent4, sliceContent5, sliceContent6, sliceContent7, sliceContent8}
+
+	for _, v := range content_list {
+		encodedStr := hex.EncodeToString(v)
+		imageType, ok := imageTypeMap[encodedStr]
+		if ok {
+			return imageType
+		}
+	}
+	logs.S.Infow(" set png type as default")
+	return ""
 }

@@ -29,23 +29,23 @@ type Request struct {
 	ProxyCallBack ProxyCallBack
 }
 type Response struct {
-	Body        []byte
-	Charset     string
+	body        []byte
+	charset     string
 	RedirectUrl string
 	SpiderType  SpiderType
 }
 
 func (r *Response) GetBytes() []byte {
-	return r.Body
+	return r.body
 }
 func (r *Response) GetContent() string {
-	return string(r.Body)
+	return string(r.body)
 }
 func (r *Response) GetCharset() string {
-	if r.Charset == "" {
-		r.Charset = r.recognitionCharsetFormat()
+	if r.charset == "" {
+		r.charset = r.recognitionCharsetFormat()
 	}
-	return r.Charset
+	return r.charset
 }
 
 // 识别编码方式
@@ -53,7 +53,7 @@ func (r *Response) recognitionCharsetFormat() string {
 	charsetStr := "utf-8"
 	if r.SpiderType == Shtml {
 		reg := regexp.MustCompile(`<meta.*?charset=\s*"?(.*?)["|;].*?>`) // 进行正则编译
-		findResult := reg.FindStringSubmatch(string(r.Body))
+		findResult := reg.FindStringSubmatch(string(r.body))
 		if findResult != nil && len(findResult) > 1 && findResult[1] != "" && strings.Index("gbk,gb18030,gb2312,utf8,utf-8,ansi,big5,unicode,ascii", strings.ToLower(findResult[1])) != -1 {
 			charsetStr = findResult[1]
 			logs.S.Info("find article code is ------>", charsetStr)
