@@ -30,3 +30,4 @@ func SignatureMap(data map[string]string) string {
 	hash.Write([]byte(p.Encode()))
 	return hex.EncodeToString(hash.Sum(nil))
 }
+
