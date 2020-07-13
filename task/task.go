@@ -41,7 +41,7 @@ type ChildTask struct {
 	ContentType   string                 `json:"content_type"`
 	Method        string                 `json:"method"`
 	Param         string                 `json:"param"`
-	Header        map[string]string `json:"header"`
+	Header        map[string]string      `json:"header"`
 }
 
 func (t *Task) Next(ctx context.Context, queue string, child ChildTask) error {
@@ -58,6 +58,7 @@ func (t *Task) Next(ctx context.Context, queue string, child ChildTask) error {
 	t.Index = child.Index
 	t.Method = child.Method
 	t.Param = child.Param
+	t.ContentType = child.ContentType
 	t.TinyExtras = child.TinyExtras
 	buff, _ := json.Marshal(t)
 	return t.redis.LPush(ctx, queue, string(buff)).Err()

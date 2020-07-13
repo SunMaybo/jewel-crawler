@@ -68,7 +68,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 			err := p.Pipeline.Invoke(ctx, task)
 			if err != nil {
 				task.Retry += 1
-				err := p.push(ctx, p.queue, task)
+				err := p.Push(ctx, p.queue, task)
 				if err != nil {
 					logs.S.Fatal(err)
 				}
@@ -77,7 +77,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 	}
 
 }
-func (p *CrawlerEngine) push(ctx context.Context, queue string, task task.Task) error {
+func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {
 	taskStr, _ := json.Marshal(task)
 	return p.redis.LPush(ctx, queue, taskStr).Err()
 }
