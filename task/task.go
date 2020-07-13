@@ -29,7 +29,7 @@ type Task struct {
 	Total         int                    `json:"total"`
 	Timeout       time.Duration          `json:"timeout"`
 	Time          int64                  `json:"time"`
-	redis         *redis.Client          `json:"-"`
+	Redis         *redis.Client          `json:"-"`
 }
 
 type ChildTask struct {
@@ -61,5 +61,5 @@ func (t *Task) Next(ctx context.Context, queue string, child ChildTask) error {
 	t.ContentType = child.ContentType
 	t.TinyExtras = child.TinyExtras
 	buff, _ := json.Marshal(t)
-	return t.redis.LPush(ctx, queue, string(buff)).Err()
+	return t.Redis.LPush(ctx, queue, string(buff)).Err()
 }

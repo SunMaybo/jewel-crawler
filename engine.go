@@ -59,6 +59,8 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 		if err != nil {
 			panic(err)
 		}
+		t.Redis = p.redis
+
 		p.limit.Acquire(t, func(task task.Task) {
 			defer p.limit.Free()
 			//todo

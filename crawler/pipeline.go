@@ -290,6 +290,7 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 			Data:        data,
 			Queue:     p.queue,
 			TempStorage: p.tempStorage,
+
 		})
 
 		//存储后置上报
