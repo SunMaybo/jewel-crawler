@@ -24,19 +24,13 @@ func SetLogLevel(level string) {
 }
 
 type Config struct {
-	Addr       string
-	Password   string
-	Db         int
+	Redis      *redis.Options
 	Queue      string
 	Concurrent int
 }
 
 func New(cfg *Config) *CrawlerEngine {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Addr,
-		Password: cfg.Password,
-		DB:       cfg.Db,
-	})
+	rdb := redis.NewClient(cfg.Redis)
 	_, err := rdb.Ping(context.Background()).Result()
 	if err != nil {
 		panic(err)

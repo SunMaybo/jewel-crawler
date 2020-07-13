@@ -5,13 +5,16 @@ import (
 	"github.com/SunMaybo/jewel-crawler/common"
 	"github.com/SunMaybo/jewel-crawler/crawler"
 	"github.com/SunMaybo/jewel-crawler/task"
+	"github.com/go-redis/redis/v8"
 	"testing"
 	"time"
 )
 
 func TestCrawlerEngine_Start(t *testing.T) {
 	engine := New(&Config{
-		Addr:       "127.0.0.1:6379",
+		Redis: &redis.Options{
+			Addr: "127.0.0.1:6379",
+		},
 		Queue:      "shtml",
 		Concurrent: 10,
 	})
