@@ -20,7 +20,7 @@ func TestCrawlerEngine_Start(t *testing.T) {
 	})
 	SetLogLevel("info")
 	id := common.GenerateRandomID()
-	err := engine.push(context.Background(), "shtml", task.Task{
+	err := engine.Push(context.Background(), "shtml", task.Task{
 		CrawlerName: "default_html_crawler",
 		CrawlerUrl:  "https://juejin.im/post/5f0ad0db6fb9a07e777e9e81",
 		Website:     "juejin.im",

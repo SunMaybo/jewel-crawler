@@ -45,18 +45,18 @@ func (f *FileSpider) Do(request Request) (Response, error) {
 
 func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 	var netTransport *http.Transport
+	netTransport = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
 	if request.ProxyCallBack != nil {
 		p := request.ProxyCallBack()
 		proxy, err := url.Parse(p)
 		if err != nil {
 			return nil, err
 		}
-		netTransport = &http.Transport{
-			Proxy: http.ProxyURL(proxy),
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		}
+		netTransport.Proxy = http.ProxyURL(proxy)
 	}
 	client := &http.Client{Timeout: request.Timeout, Transport: netTransport}
 	req, err := http.NewRequest(request.Param, request.Url, bytes.NewReader([]byte(request.Param)))
