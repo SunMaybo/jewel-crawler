@@ -45,21 +45,23 @@ type ChildTask struct {
 }
 
 func (t *Task) Next(ctx context.Context, queue string, child ChildTask) error {
-	t.ParentId = t.TaskId
-	t.TaskId = common.GenerateRandomID()
-	t.Time = time.Now().Unix()
-	t.Retry = 0
-	t.CrawlerUrl = child.CrawlerUrl
-	t.TempStorageId = child.TempStorageId
-	t.CrawlerName = child.CrawlerName
-	t.Depth += 1
-	t.ContentType = child.ContentType
-	t.Header = child.Header
-	t.Index = child.Index
-	t.Method = child.Method
-	t.Param = child.Param
-	t.ContentType = child.ContentType
-	t.TinyExtras = child.TinyExtras
-	buff, _ := json.Marshal(t)
+	task := Task{
+		ParentId:      t.TaskId,
+		TaskId:        common.GenerateRandomID(),
+		GlobalId:      t.GlobalId,
+		Time:          time.Now().Unix(),
+		CrawlerUrl:    child.CrawlerUrl,
+		TempStorageId: child.TempStorageId,
+		Depth:         t.Depth + 1,
+		ContentType:   child.ContentType,
+		Header:        child.Header,
+		Index:         child.Index,
+		Method:        child.Method,
+		Param:         child.Param,
+		TinyExtras:    child.TinyExtras,
+		Website:       t.Website,
+		Timeout:       t.Timeout,
+	}
+	buff, _ := json.Marshal(task)
 	return t.Redis.LPush(ctx, queue, string(buff)).Err()
 }
