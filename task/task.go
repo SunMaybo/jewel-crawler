@@ -47,6 +47,7 @@ type ChildTask struct {
 func (t *Task) Next(ctx context.Context, queue string, child ChildTask) error {
 	task := Task{
 		ParentId:      t.TaskId,
+		CrawlerName:   child.CrawlerName,
 		TaskId:        common.GenerateRandomID(),
 		GlobalId:      t.GlobalId,
 		Time:          time.Now().Unix(),
