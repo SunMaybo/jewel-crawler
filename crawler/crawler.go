@@ -8,10 +8,12 @@ import (
 type CollectEvent struct {
 	Task task.Task
 	Temp temp.Temp
+	Queue     string
 }
 type ParserEvent struct {
 	Task    task.Task
 	Temp    temp.Temp
+	Queue     string
 	Content string
 }
 type StorageEvent struct {

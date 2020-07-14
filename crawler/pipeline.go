@@ -156,6 +156,7 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		content, err := crawler.Collect(CollectEvent{
 			Task: task,
 			Temp: temp,
+			Queue:     p.queue,
 		})
 
 		//后置上报
@@ -221,6 +222,7 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		data, err := crawler.Parser(ParserEvent{
 			Task:    task,
 			Temp:    temp,
+			Queue:     p.queue,
 			Content: content,
 		})
 
