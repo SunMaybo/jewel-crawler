@@ -1,7 +1,6 @@
 package crawler
 
 import (
-	"github.com/SunMaybo/jewel-crawler/common/parser"
 	"github.com/SunMaybo/jewel-crawler/common/spider"
 	"github.com/SunMaybo/jewel-crawler/logs"
 )
@@ -24,7 +23,7 @@ func (dhc *DefaultHtmlCrawler) Collect(event CollectEvent) (string, error) {
 	return resp.GetContent(), nil
 }
 func (dhc *DefaultHtmlCrawler) Parser(event ParserEvent) (map[string]interface{}, error) {
-	data, err := parser.ParserArticleWithReadability(event.Content, event.Task.CrawlerUrl)
+	data, err := event.ReadabilityParser(event.Content, event.Task.CrawlerUrl)
 	if err != nil {
 		return nil, err
 	}
