@@ -59,7 +59,7 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 		netTransport.Proxy = http.ProxyURL(proxy)
 	}
 	client := &http.Client{Timeout: request.Timeout, Transport: netTransport}
-	req, err := http.NewRequest(request.Param, request.Url, bytes.NewReader([]byte(request.Param)))
+	req, err := http.NewRequest(request.Method, request.Url, bytes.NewReader([]byte(request.Param)))
 	if err != nil {
 		logs.S.Errorw("请求数据出错", "error", err.Error())
 		return nil, err
