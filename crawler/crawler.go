@@ -61,6 +61,9 @@ func (event *Event) GenerateRandomID() string {
 func (event *Event) SignatureMap(data map[string]string) string {
 	return common.SignatureMap(data)
 }
+func (event *Event) ConvertAssign(src, des interface{}) error {
+	return common.ConvertAssign(src, des)
+}
 
 type Crawler interface {
 	Collect(event CollectEvent) (string, error)
