@@ -79,7 +79,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 }
 func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {
 	taskStr, _ := json.Marshal(task)
-	return p.redis.LPush(ctx, queue, taskStr).Err()
+	return p.redis.RPush(ctx, queue, taskStr).Err()
 }
 func (p *CrawlerEngine) Close() error {
 	return p.redis.Close()
