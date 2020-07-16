@@ -3,6 +3,7 @@ package charset
 import (
 	"bytes"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -124,7 +125,10 @@ func DecodeBytes(s []byte, enc string) (string, error) {
 // MustDecodeBytes converts given bytes to a UTF-8 string and panics if errros occur.
 func MustDecodeBytes(s []byte, enc string) []byte {
 	ret, err := DecodeReaderBytes(bytes.NewReader(s), enc)
-	panicIfError(err)
+	if err!=nil {
+		zap.S().Warnw("decode charset err","err",err)
+		return s
+	}
 	return ret
 }
 
@@ -182,7 +186,10 @@ func EncodeBytes(s []byte, enc string) ([]byte, error) {
 // MustEncodeBytes converts a bytes to bytes encoded with given encoding and panics if errors occur
 func MustEncodeBytes(s []byte, enc string) []byte {
 	ret, err := EncodeReader(bytes.NewReader(s), enc)
-	panicIfError(err)
+	if err!=nil {
+		zap.S().Warnw("encode charset err","err",err)
+		return s
+	}
 	return ret
 }
 
