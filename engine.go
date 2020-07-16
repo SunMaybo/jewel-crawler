@@ -60,18 +60,18 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 			panic(err)
 		}
 		t.Redis = p.redis
-		if t.Retry >= maxExecuteCount {
-			return
-		}
+		//if t.Retry >= maxExecuteCount {
+		//	return
+		//}
 		p.limit.Acquire(t, func(task task.Task) {
-			err := p.Pipeline.Invoke(ctx, task)
-			if err != nil {
-				task.Retry += 1
-				err := p.Push(ctx, p.queue, task)
-				if err != nil {
-					logs.S.Fatal(err)
-				}
-			}
+			p.Pipeline.Invoke(ctx, task)
+			//if err != nil {
+			//	task.Retry += 1
+			//	err := p.Push(ctx, p.queue, task)
+			//	if err != nil {
+			//		logs.S.Fatal(err)
+			//	}
+			//}
 			p.limit.Free()
 		})
 	}
