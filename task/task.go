@@ -64,5 +64,5 @@ func (t *Task) Next(ctx context.Context, queue string, child ChildTask) error {
 		Timeout:       t.Timeout,
 	}
 	buff, _ := json.Marshal(task)
-	return t.Redis.LPush(ctx, queue, string(buff)).Err()
+	return t.Redis.RPush(ctx, queue, string(buff)).Err()
 }
