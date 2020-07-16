@@ -10,7 +10,7 @@ type ConcurrentLimit struct {
 func NewConcurrentLimit(total int) *ConcurrentLimit {
 	return &ConcurrentLimit{
 		total:         total,
-		activeChannel: make(chan byte, 10),
+		activeChannel: make(chan byte, total),
 	}
 }
 
