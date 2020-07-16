@@ -78,6 +78,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 
 }
 func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {
+	logs.S.Infow("下发任务","global_id",task.GlobalId,"url",task.CrawlerUrl)
 	taskStr, _ := json.Marshal(task)
 	return p.redis.RPush(ctx, queue, taskStr).Err()
 }
