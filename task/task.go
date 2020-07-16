@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/SunMaybo/jewel-crawler/common"
+	"github.com/SunMaybo/jewel-crawler/logs"
 	"github.com/go-redis/redis/v8"
 	"time"
 )
@@ -63,6 +64,7 @@ func (t *Task) Next(ctx context.Context, queue string, child ChildTask) error {
 		Website:       t.Website,
 		Timeout:       t.Timeout,
 	}
+	logs.S.Infow("下发任务", "global_id", task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId, "url", task.CrawlerUrl)
 	buff, _ := json.Marshal(task)
 	return t.Redis.RPush(ctx, queue, string(buff)).Err()
 }
