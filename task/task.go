@@ -64,7 +64,7 @@ func (t *Task) Next(ctx context.Context, queue string, child ChildTask) error {
 		Website:       t.Website,
 		Timeout:       t.Timeout,
 	}
-	logs.S.Infow("下发任务", "crawler_name",task.CrawlerName,"global_id", task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId, "url", task.CrawlerUrl)
+	logs.S.Infow("下发任务", "crawler_name", task.CrawlerName, "global_id", task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId, "url", task.CrawlerUrl)
 	buff, _ := json.Marshal(task)
 	return t.Redis.RPush(ctx, queue, string(buff)).Err()
 }

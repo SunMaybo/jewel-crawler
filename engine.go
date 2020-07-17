@@ -6,6 +6,7 @@ import (
 	"github.com/SunMaybo/jewel-crawler/crawler"
 	"github.com/SunMaybo/jewel-crawler/limit"
 	logs "github.com/SunMaybo/jewel-crawler/logs"
+	"github.com/SunMaybo/jewel-crawler/sync"
 	"github.com/SunMaybo/jewel-crawler/task"
 	"github.com/SunMaybo/jewel-crawler/temp"
 	"github.com/go-redis/redis/v8"
@@ -78,9 +79,12 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 
 }
 func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {
-	logs.S.Infow("下发任务","global_id",task.GlobalId,"url",task.CrawlerUrl)
+	logs.S.Infow("下发任务", "global_id", task.GlobalId, "url", task.CrawlerUrl)
 	taskStr, _ := json.Marshal(task)
 	return p.redis.RPush(ctx, queue, taskStr).Err()
+}
+func (p *CrawlerEngine) NewMutex() *sync.Mutex {
+	return sync.New(p.redis)
 }
 func (p *CrawlerEngine) Close() error {
 	return p.redis.Close()

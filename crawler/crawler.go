@@ -33,7 +33,8 @@ type StorageEvent struct {
 }
 
 func (event *Event) ApiSpider(size int) spider.Spider {
-	return spider.NewApiSpider(size)
+	spider:=spider.NewApiSpider(size)
+	return spider
 }
 func (event *Event) ShtmlSpider(size int) spider.Spider {
 	return spider.NewShtmlSpider(size)
