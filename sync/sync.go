@@ -45,7 +45,7 @@ func (m *Mutex) SetOffset(value string) {
 }
 func (m *Mutex) GetOffset() (string, error) {
 	result, err := m.redis.Get(context.Background(), m.Name+":offset").Result()
-	if err != nil {
+	if err != nil&&err !=redis.Nil {
 		return "", err
 	}
 	return result, nil
