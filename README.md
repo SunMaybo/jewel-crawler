@@ -148,11 +148,13 @@ sp := spider.NewFileSpider(50 * 1024 * 1024)
 fmt.Println(resp.GetCharset()) //图片格式
 ```
 ## 任务下发
+其中TinyExtras 用户任务小数据的转移，较大数据临时存储通过temp_storage_id 进行关联，数据存储在redis中
 ```
 childImage := task.ChildTask{
 			CrawlerName: ImgCrawler,
 			CrawlerUrl:  img,
 			ContentType: "json",
+			TempStorageId: "",
 			Method:      "GET",
 			Index:       i,
 			TinyExtras: map[string]interface{}{
@@ -160,6 +162,12 @@ childImage := task.ChildTask{
 			},
 		}
 event.Task.Next(context.Background(), event.Queue, childImage)
+```
+### 较大数据临时存储
+```
+event.TempStorage.Set(context.Background(),"id",temp.Temp{},1*time.Second)
+event.TempStorage.Get(context.Background(),"id")
+event.TempStorage.Clear(context.Background(),"id")
 ```
 
 ## 使用[GraphQuery](https://github.com/storyicon/graphquery)进行解析
