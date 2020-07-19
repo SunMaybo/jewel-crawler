@@ -85,7 +85,67 @@ func (dhc *DefaultHtmlCrawler) Storage(event StorageEvent) error {
 	logs.S.Info(event.Data)
 	return nil
 }
+```
+## 抓取组件
 
+### 接口采集
+
+```
+apiSpider := event.ApiSpider(1024 * 1024)
+	resp, err := apiSpider.Do(spider.Request{
+		Url:     event.Task.CrawlerUrl,
+		Method:  event.Task.Method,
+		Param:   event.Task.Param,
+		Headers: event.Task.Header,
+		Timeout: event.Task.Timeout,
+		ProxyCallBack: func() string {
+			return "http://127.0.0.1:7890"
+		},
+	})
+```
+### 静态页面采集
+静态页面采集返回的数据进行自动转码UTF-8，解决不同网站编码不同带来乱码问题，以及返回RedirectUrl最大重定向深度为10
+```
+shtmlSpider := event.ShtmlSpider(1024 * 1024)
+	resp, err := shtmlSpider.Do(spider.Request{
+		Url:    event.Task.CrawlerUrl,
+		Method: "GET",
+		ProxyCallBack: func() string {
+			return proxy.GetRandomProxy()
+		},
+	})
+    fmt.Println(resp.GetContent())
+	fmt.Println(resp.GetCharset())
+	fmt.Println(resp.RedirectUrl)
+```
+
+### 动态页面采集
+动态采集使用[chromedp](github.com/chromedp/chromedp)底层依赖于Chrome浏览器需要在启动Chrome浏览器的环境中进行启用。
+```
+dhtmlSpider := event.DhtmlSpider(1024 * 1024)
+	resp, err := dhtmlSpider.Do(spider.Request{
+		Url:    event.Task.CrawlerUrl,
+		Method: "GET",
+		ProxyCallBack: func() string {
+			return proxy.GetRandomProxy()
+		},
+	})
+```
+
+### 文件采集
+目前仅支持图片采集自动解析图片格式
+```
+sp := spider.NewFileSpider(50 * 1024 * 1024)
+	resp, err := sp.Do(spider.Request{
+		Url:     event.Task.CrawlerUrl,
+		Method:  "GET",
+		Timeout: 60 * time.Second,
+		ProxyCallBack: func() string {
+			return proxy.GetRandomProxy()
+		},
+	})
+	
+fmt.Println(resp.GetCharset()) //图片格式
 ```
 ## 任务下发
 ```
