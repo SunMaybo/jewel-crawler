@@ -55,7 +55,7 @@ type Crawler interface {
 }
 ```
 ## 文章抓取的模版
-其中event中封装了抓取组建，并且可以制定抓取数据最大大小，方式数据过大撑爆内存
+其中event中封装了抓取组建，并且可以制定抓取数据最大大小，防止数据过大撑爆内存
 ```
 type DefaultHtmlCrawler struct {
 }
