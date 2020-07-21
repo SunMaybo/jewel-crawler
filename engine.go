@@ -18,6 +18,7 @@ type CrawlerEngine struct {
 	limit    *limit.ConcurrentLimit
 	Pipeline *crawler.PipeLine
 	queue    string
+	CallBack func(task task.Task, err error)
 }
 
 func SetLogLevel(level string) {
@@ -64,16 +65,23 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 			panic(err)
 		}
 		t.Redis = p.redis
-		if t.Retry >= maxExecuteCount {
-			return
-		}
 		p.limit.Acquire(t, func(task task.Task) {
-			p.Pipeline.Invoke(ctx, task)
+			err = p.Pipeline.Invoke(ctx, task)
 			if err != nil {
-				task.Retry += 1
-				err := p.Push(ctx, p.queue, task)
-				if err != nil {
-					logs.S.Fatal(err)
+				if task.Retry <= maxExecuteCount {
+					task.Retry += 1
+					err := p.Push(ctx, p.queue, task)
+					if err != nil {
+						logs.S.Fatal(err)
+					}
+				} else {
+					if p.CallBack != nil {
+						p.CallBack(task, err)
+					}
+				}
+			} else {
+				if p.CallBack != nil {
+					p.CallBack(task, err)
 				}
 			}
 			p.limit.Free()
