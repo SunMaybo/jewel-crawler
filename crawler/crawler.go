@@ -4,36 +4,35 @@ import (
 	"github.com/SunMaybo/jewel-crawler/common"
 	"github.com/SunMaybo/jewel-crawler/common/parser"
 	"github.com/SunMaybo/jewel-crawler/common/spider"
+	"github.com/SunMaybo/jewel-crawler/sync"
 	"github.com/SunMaybo/jewel-crawler/task"
 	"github.com/SunMaybo/jewel-crawler/temp"
 )
 
 type Event struct {
+	TempStorage *temp.TempStorage
 }
 
 type CollectEvent struct {
 	Event
 	Task  task.Task
 	Queue string
-	Temp  temp.Temp
 }
 type ParserEvent struct {
 	Event
 	Task    task.Task
 	Queue   string
-	Temp    temp.Temp
 	Content string
 }
 type StorageEvent struct {
 	Event
-	Task        task.Task
-	Queue       string
-	Data        map[string]interface{}
-	TempStorage *temp.TempStorage
+	Task  task.Task
+	Queue string
+	Data  map[string]interface{}
 }
 
 func (event *Event) ApiSpider(size int) spider.Spider {
-	spider:=spider.NewApiSpider(size)
+	spider := spider.NewApiSpider(size)
 	return spider
 }
 func (event *Event) ShtmlSpider(size int) spider.Spider {
@@ -64,6 +63,9 @@ func (event *Event) SignatureMap(data map[string]string) string {
 }
 func (event *Event) ConvertAssign(src, des interface{}) error {
 	return common.ConvertAssign(src, des)
+}
+func (event *Event) NewMutex() *sync.Mutex {
+	return event.TempStorage.NewMutex()
 }
 
 type Crawler interface {

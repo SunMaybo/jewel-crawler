@@ -3,6 +3,7 @@ package temp
 import (
 	"context"
 	"encoding/json"
+	"github.com/SunMaybo/jewel-crawler/sync"
 	"github.com/go-redis/redis/v8"
 	"time"
 )
@@ -40,4 +41,7 @@ func (ts *TempStorage) Get(ctx context.Context, key string) (Temp, error) {
 		return temp, err
 	}
 	return nil, err
+}
+func (ts *TempStorage) NewMutex() *sync.Mutex {
+	return sync.New(ts.rc)
 }

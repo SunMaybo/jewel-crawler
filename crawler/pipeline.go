@@ -14,7 +14,7 @@ type PipeLine struct {
 	reportFunc   map[ReportType]func(report Report) error
 	crawlerInter map[task.CrawlerName]Crawler
 	tempStorage  *temp.TempStorage
-	queue      string
+	queue        string
 }
 
 func New(queue string, tempStorage *temp.TempStorage) *PipeLine {
@@ -23,7 +23,7 @@ func New(queue string, tempStorage *temp.TempStorage) *PipeLine {
 		reportFunc:   make(map[ReportType]func(report Report) error),
 		crawlerInter: make(map[task.CrawlerName]Crawler),
 		tempStorage:  tempStorage,
-		queue:      queue,
+		queue:        queue,
 	}
 }
 
@@ -154,9 +154,11 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 
 		}
 		content, err := crawler.Collect(CollectEvent{
-			Task: task,
-			Temp: temp,
-			Queue:     p.queue,
+			Task:  task,
+			Queue: p.queue,
+			Event: Event{
+				TempStorage: p.tempStorage,
+			},
 		})
 
 		//后置上报
@@ -173,9 +175,8 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		}
 
 		if err != nil {
-			logs.S.Warnw("crawler err", "crawler_name", task.CrawlerName, "global_id",
-				task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId,
-				"crawler_url", task.CrawlerUrl, "interval", time.Since(start).String(), "message", err.Error())
+			logs.S.Warnw("crawler err", "crawler_name", "err", err, task.CrawlerName, "crawler_url", task.CrawlerUrl, "global_id",
+				task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId, "interval", time.Since(start).String())
 			return err
 		}
 
@@ -221,9 +222,11 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		//数据解析
 		data, err := crawler.Parser(ParserEvent{
 			Task:    task,
-			Temp:    temp,
-			Queue:     p.queue,
+			Queue:   p.queue,
 			Content: content,
+			Event: Event{
+				TempStorage: p.tempStorage,
+			},
 		})
 
 		//解析后置上报
@@ -240,15 +243,17 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		}
 
 		if err != nil {
-			logs.S.Errorw("parser err", "crawler_name", task.CrawlerName, "global_id", task.GlobalId,
-				"parent_id", task.ParentId, "task_id", task.TaskId, "crawler_url", task.CrawlerUrl,
-				"interval", time.Since(start).String(), "message", err.Error())
+			logs.S.Errorw("parser err", "crawler_name", task.CrawlerName, "err", err, "crawler_url", task.CrawlerUrl, "global_id", task.GlobalId,
+				"parent_id", task.ParentId, "task_id", task.TaskId,
+				"interval", time.Since(start).String())
 			return err
 		}
 
-		logs.S.Infow("parser success", "crawler_name", task.CrawlerName, "global_id", task.GlobalId,
-			"parent_id", task.ParentId, "task_id", task.TaskId, "crawler_url", task.CrawlerUrl,
-			"interval", time.Since(start).String())
+		if len(data) > 0 {
+			logs.S.Infow("parser success", "crawler_name", task.CrawlerName, "global_id", task.GlobalId,
+				"parent_id", task.ParentId, "task_id", task.TaskId, "crawler_url", task.CrawlerUrl,
+				"interval", time.Since(start).String())
+		}
 
 		//解析后置过滤
 		if filterFunc, ok := p.filterFunc[ParserAfterFilter]; ok {
@@ -288,11 +293,12 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		}
 
 		err = crawler.Storage(StorageEvent{
-			Task:        task,
-			Data:        data,
-			Queue:     p.queue,
-			TempStorage: p.tempStorage,
-
+			Task:  task,
+			Data:  data,
+			Queue: p.queue,
+			Event: Event{
+				TempStorage: p.tempStorage,
+			},
 		})
 
 		//存储后置上报
@@ -308,9 +314,9 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 
 		}
 		if err != nil {
-			logs.S.Warnw("storage err", "crawler_name", task.CrawlerName, "global_id",
+			logs.S.Warnw("storage err", "crawler_name", "err", err, task.CrawlerName, "crawler_url", task.CrawlerUrl, "global_id",
 				task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId,
-				"crawler_url", task.CrawlerUrl, "interval", time.Since(start).String(), "message", err.Error())
+				"interval", time.Since(start).String())
 			return err
 		}
 		logs.S.Infow("storage success", "crawler_name", task.CrawlerName, "global_id",
