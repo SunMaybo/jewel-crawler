@@ -67,23 +67,23 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 		t.Redis = p.redis
 		p.limit.Acquire(t, func(task task.Task) {
 			err = p.Pipeline.Invoke(ctx, task)
-			//if err != nil {
-			//	if task.Retry <= maxExecuteCount {
-			//		task.Retry += 1
-			//		err := p.Push(ctx, p.queue, task)
-			//		if err != nil {
-			//			logs.S.Fatal(err)
-			//		}
-			//	} else {
-			//		if p.CallBack != nil {
-			//			p.CallBack(task, err)
-			//		}
-			//	}
-			//} else {
-			if p.CallBack != nil {
-				p.CallBack(task, err)
+			if err != nil {
+				if task.Retry <= maxExecuteCount {
+					task.Retry += 1
+					err := p.Push(ctx, p.queue, task)
+					if err != nil {
+						logs.S.Fatal(err)
+					}
+				} else {
+					if p.CallBack != nil {
+						p.CallBack(task, err)
+					}
+				}
+			} else {
+				if p.CallBack != nil {
+					p.CallBack(task, err)
+				}
 			}
-			//}
 			p.limit.Free()
 		})
 	}
