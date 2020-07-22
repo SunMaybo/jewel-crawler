@@ -110,7 +110,7 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 		}
 
 		if err != nil {
-			logs.S.Warnw("crawler err", "crawler_name", "err", err, task.CrawlerName, "crawler_url", task.CrawlerUrl, "global_id",
+			logs.S.Errorw("crawler err", "crawler_name",task.CrawlerName, "err", err,  "crawler_url", task.CrawlerUrl, "global_id",
 				task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId, "interval", time.Since(start).String())
 			return err
 		}
@@ -201,7 +201,7 @@ func (p *PipeLine) Invoke(ctx context.Context, task task.Task) error {
 
 		}
 		if err != nil {
-			logs.S.Warnw("storage err", "crawler_name", "err", err, task.CrawlerName, "crawler_url", task.CrawlerUrl, "global_id",
+			logs.S.Errorw("storage err", "crawler_name", task.CrawlerName,"err", err, "crawler_url", task.CrawlerUrl, "global_id",
 				task.GlobalId, "parent_id", task.ParentId, "task_id", task.TaskId,
 				"interval", time.Since(start).String())
 			return err
