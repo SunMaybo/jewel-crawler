@@ -26,7 +26,11 @@ func (d *DhtmlSpider) Do(request Request) (Response, error) {
 		ids []cdp.NodeID
 	)
 	if request.ProxyCallBack != nil {
-		chromedp.ProxyServer(request.ProxyCallBack())
+		proxy := request.ProxyCallBack()
+		if proxy != "" {
+			chromedp.ProxyServer(proxy)
+		}
+
 	}
 	if err := chromedp.Run(ctx,
 		chromedp.Emulate(device.IPad),

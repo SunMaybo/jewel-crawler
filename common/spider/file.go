@@ -52,11 +52,13 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 	}
 	if request.ProxyCallBack != nil {
 		p := request.ProxyCallBack()
-		proxy, err := url.Parse(p)
-		if err != nil {
-			return nil, err
+		if p!="" {
+			proxy, err := url.Parse(p)
+			if err != nil {
+				return nil, err
+			}
+			netTransport.Proxy = http.ProxyURL(proxy)
 		}
-		netTransport.Proxy = http.ProxyURL(proxy)
 	}
 	client := &http.Client{Timeout: request.Timeout, Transport: netTransport}
 	req, err := http.NewRequest(request.Method, request.Url, bytes.NewReader([]byte(request.Param)))

@@ -61,7 +61,10 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	client := resty.New()
 	if request.ProxyCallBack != nil {
-		client.SetProxy(request.ProxyCallBack())
+		proxy := request.ProxyCallBack()
+		if proxy != "" {
+			client.SetProxy(request.ProxyCallBack())
+		}
 	}
 	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(15))
