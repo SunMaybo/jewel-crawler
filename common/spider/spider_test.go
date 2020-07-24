@@ -9,18 +9,26 @@ import (
 func TestNewShtmlSpider(t *testing.T) {
 	sp := NewShtmlSpider(1 * 1024 * 1024)
 	resp, err := sp.Do(Request{
-		Url:     "https://java.ctolib.com/chromedp.html",
+		Url:     "https://www.christies.com/South-Asian-Modern--28430.aspx?lid=1",
 		Method:  "GET",
-		Timeout: 5 * time.Second,
+		Headers: map[string]string{
+			"content-type":     "application/json; charset=UTF-8",
+			"origin":           "https://onlineonly.christies.com",
+			"sec-fetch-dest":   "empty",
+			"sec-fetch-mode":   "cors",
+			"sec-fetch-site":   "same-origin",
+			"x-requested-with": "XMLHttpRequest",
+		},
 		ProxyCallBack: func() string {
 			return "http://127.0.0.1:7890"
 		},
+		Timeout: 30 * time.Second,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(resp.GetContent())
-	t.Log(resp.GetCharset())
+	t.Log(resp.RedirectUrl)
 
 }
 

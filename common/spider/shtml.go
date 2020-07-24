@@ -67,7 +67,7 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 		}
 	}
 	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(15))
+	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
 	client.SetTimeout(request.Timeout)
 	client.SetRetryCount(0)
 	client.SetDoNotParseResponse(true)
