@@ -18,6 +18,7 @@ const (
 )
 
 type ProxyCallBack func() string
+type SocketProxyCallBack func()(string,string,string)
 
 type Request struct {
 	Url           string
@@ -27,6 +28,7 @@ type Request struct {
 	Timeout       time.Duration
 	Retry         int
 	ProxyCallBack ProxyCallBack
+	SocketProxyCallBack SocketProxyCallBack
 }
 type Response struct {
 	body        []byte

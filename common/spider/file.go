@@ -2,9 +2,12 @@ package spider
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/hex"
 	"github.com/SunMaybo/jewel-crawler/logs"
+	"golang.org/x/net/proxy"
+	"net"
 	"net/http"
 	"net/url"
 )
@@ -43,6 +46,7 @@ func (f *FileSpider) Do(request Request) (Response, error) {
 	return Response{}, err
 }
 
+
 func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 	var netTransport *http.Transport
 	netTransport = &http.Transport{
@@ -60,7 +64,25 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 			netTransport.Proxy = http.ProxyURL(proxy)
 		}
 	}
+	if request.SocketProxyCallBack!=nil {
+		user,pwd,url:=request.SocketProxyCallBack()
+
+		auth := proxy.Auth{
+			User:     user,
+			Password: pwd,
+		}
+
+		// 设置代理
+		dialer, err := proxy.SOCKS5("tcp", url, &auth, proxy.Direct)
+		if err != nil {
+			return nil,err
+		}
+		netTransport.DialContext= func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.Dial(network,addr)
+		}
+	}
 	client := &http.Client{Timeout: request.Timeout, Transport: netTransport}
+
 	req, err := http.NewRequest(request.Method, request.Url, bytes.NewReader([]byte(request.Param)))
 	if err != nil {
 		logs.S.Errorw("请求数据出错", "error", err.Error())
