@@ -62,7 +62,6 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 	}
 	if request.SocketProxyCallBack!=nil {
 		user,pwd,url:=request.SocketProxyCallBack()
-
 		auth := proxy.Auth{
 			User:     user,
 			Password: pwd,

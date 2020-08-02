@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/SunMaybo/jewel-crawler/common/spider/charset"
 	"github.com/SunMaybo/jewel-crawler/logs"
+	"golang.org/x/net/proxy"
 	"gopkg.in/resty.v1"
+	"net/http"
 	"regexp"
 	"strings"
 )
@@ -65,6 +67,19 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 		if proxy != "" {
 			client.SetProxy(request.ProxyCallBack())
 		}
+	}
+	if request.SocketProxyCallBack != nil {
+		// create a dialer
+		u, p, a := request.SocketProxyCallBack()
+		dialer, err := proxy.SOCKS5("tcp", a, &proxy.Auth{User: u, Password: p}, proxy.Direct)
+		if err != nil {
+			logs.S.Error("Unable to obtain proxy dialer: %v\n", err)
+		}
+
+		// create a transport
+		ptransport := &http.Transport{Dial: dialer.Dial}
+		// set transport into resty
+		resty.SetTransport(ptransport)
 	}
 	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
