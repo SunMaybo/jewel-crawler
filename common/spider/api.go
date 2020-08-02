@@ -2,11 +2,9 @@ package spider
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
-	"net"
 	"net/http"
 	"net/url"
 )
@@ -73,11 +71,10 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 		// 设置代理
 		dialer, err := proxy.SOCKS5("tcp", url, &auth, proxy.Direct)
 		if err != nil {
+			logs.S.Error(err)
 			return nil,err
 		}
-		netTransport.DialContext= func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return dialer.Dial(network,addr)
-		}
+		netTransport.Dial= dialer.Dial
 	}
 	client := &http.Client{Timeout: request.Timeout, Transport: netTransport}
 	req, err := http.NewRequest(request.Method, request.Url, bytes.NewReader([]byte(request.Param)))
