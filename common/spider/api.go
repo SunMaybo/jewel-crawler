@@ -22,7 +22,7 @@ func NewApiSpider(size int) *ApiSpider {
 		size:       size,
 	}
 }
-func (a *ApiSpider) o(request Request) (Response, error) {
+func (a *ApiSpider) Do(request Request) (Response, error) {
 	if request.Retry <= 0 {
 		request.Retry = 3
 	}
