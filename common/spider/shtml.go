@@ -89,6 +89,9 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	client.SetTimeout(request.Timeout)
 	client.SetRetryCount(0)
 	client.SetDoNotParseResponse(true)
+	if request.CookieJarCallBack != nil {
+		client.SetCookies(request.CookieJarCallBack())
+	}
 	r := client.R()
 	if request.Headers != nil {
 		isUserAgent := false

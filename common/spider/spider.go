@@ -3,6 +3,7 @@ package spider
 import (
 	"github.com/SunMaybo/jewel-crawler/common/spider/charset"
 	"github.com/SunMaybo/jewel-crawler/logs"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -18,17 +19,20 @@ const (
 )
 
 type ProxyCallBack func() string
-type SocketProxyCallBack func()(string,string,string)
+type SocketProxyCallBack func() (string, string, string)
+
+type CookieJarCallBack func() []*http.Cookie
 
 type Request struct {
-	Url           string
-	Method        string
-	Param         string
-	Headers       map[string]string
-	Timeout       time.Duration
-	Retry         int
-	ProxyCallBack ProxyCallBack
+	Url                 string
+	Method              string
+	Param               string
+	Headers             map[string]string
+	Timeout             time.Duration
+	Retry               int
+	ProxyCallBack       ProxyCallBack
 	SocketProxyCallBack SocketProxyCallBack
+	CookieJarCallBack   CookieJarCallBack
 }
 type Response struct {
 	body        []byte

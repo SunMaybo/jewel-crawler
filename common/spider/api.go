@@ -6,6 +6,7 @@ import (
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 )
@@ -79,6 +80,12 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 
 	}
 	client := &http.Client{Timeout: request.Timeout, Transport: netTransport}
+	if request.CookieJarCallBack != nil {
+		jar, _ := cookiejar.New(nil)
+		u, _ := url.Parse(request.Url)
+		jar.SetCookies(u, request.CookieJarCallBack())
+		client.Jar = jar
+	}
 	req, err := http.NewRequest(request.Method, request.Url, bytes.NewReader([]byte(request.Param)))
 	if err != nil {
 		logs.S.Errorw("请求数据出错", "error", err.Error())

@@ -20,3 +20,4 @@ require (
 	golang.org/x/text v0.3.2
 	gopkg.in/resty.v1 v1.12.0
 )
+
