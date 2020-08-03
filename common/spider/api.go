@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -13,6 +14,7 @@ import (
 type ApiSpider struct {
 	spiderType SpiderType
 	size       int
+	Jar        http.CookieJar
 }
 
 //请求数据最大size限制
@@ -49,6 +51,12 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
+		DialContext: (&net.Dialer{
+			Timeout:   request.Timeout,
+			KeepAlive: request.Timeout,
+		}).DialContext,
+		TLSHandshakeTimeout: request.Timeout,
+		ForceAttemptHTTP2:   true,
 	}
 	if request.ProxyCallBack != nil {
 		p := request.ProxyCallBack()
@@ -79,6 +87,9 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 
 	}
 	client := &http.Client{Timeout: request.Timeout, Transport: netTransport}
+	if a.Jar != nil {
+		client.Jar = a.Jar
+	}
 	req, err := http.NewRequest(request.Method, request.Url, bytes.NewReader([]byte(request.Param)))
 	if err != nil {
 		logs.S.Errorw("请求数据出错", "error", err.Error())

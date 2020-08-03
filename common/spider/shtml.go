@@ -8,6 +8,7 @@ import (
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
 	"gopkg.in/resty.v1"
+	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -16,6 +17,7 @@ import (
 type ShtmlSpider struct {
 	spiderType SpiderType
 	size       int
+	Jar        http.CookieJar
 }
 
 //请求数据最大size限制
@@ -88,7 +90,18 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
 	client.SetTimeout(request.Timeout)
 	client.SetRetryCount(0)
+	client.SetTransport(&http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   request.Timeout,
+			KeepAlive: request.Timeout,
+		}).DialContext,
+		TLSHandshakeTimeout: request.Timeout,
+		ForceAttemptHTTP2: true,
+	})
 	client.SetDoNotParseResponse(true)
+	if s.Jar != nil {
+		client.SetCookieJar(s.Jar)
+	}
 	if request.CookieCallBack != nil {
 		client.SetCookies(request.CookieCallBack())
 	}
