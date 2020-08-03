@@ -60,20 +60,22 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 		}
 
 	}
-	if request.SocketProxyCallBack!=nil {
-		user,pwd,url:=request.SocketProxyCallBack()
+	if request.SocketProxyCallBack != nil {
+		user, pwd, url := request.SocketProxyCallBack()
 		auth := proxy.Auth{
 			User:     user,
 			Password: pwd,
 		}
-
-		// 设置代理
-		dialer, err := proxy.SOCKS5("tcp", url, &auth, proxy.Direct)
-		if err != nil {
-			logs.S.Error(err)
-			return nil,err
+		if url != "" {
+			// 设置代理
+			dialer, err := proxy.SOCKS5("tcp", url, &auth, proxy.Direct)
+			if err != nil {
+				logs.S.Error(err)
+				return nil, err
+			}
+			netTransport.Dial = dialer.Dial
 		}
-		netTransport.Dial= dialer.Dial
+
 	}
 	client := &http.Client{Timeout: request.Timeout, Transport: netTransport}
 	req, err := http.NewRequest(request.Method, request.Url, bytes.NewReader([]byte(request.Param)))
