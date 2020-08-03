@@ -4,7 +4,6 @@ import (
 	"github.com/SunMaybo/jewel-crawler/common/spider/charset"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"net/http"
-	"net/http/cookiejar"
 	"regexp"
 	"strings"
 	"time"
@@ -22,9 +21,7 @@ const (
 type ProxyCallBack func() string
 type SocketProxyCallBack func() (string, string, string)
 
-var CookieJar, _ = cookiejar.New(nil)
-
-type CookieJarCallBack func() []*http.Cookie
+type CookieCallBack func() []*http.Cookie
 
 type Request struct {
 	Url                 string
@@ -35,7 +32,7 @@ type Request struct {
 	Retry               int
 	ProxyCallBack       ProxyCallBack
 	SocketProxyCallBack SocketProxyCallBack
-	CookieJarCallBack   CookieJarCallBack
+	CookieCallBack      CookieCallBack
 }
 type Response struct {
 	body        []byte
