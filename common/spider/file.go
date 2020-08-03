@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/proxy"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type FileSpider struct {
@@ -84,11 +85,20 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 		logs.S.Errorw("请求数据出错", "error", err.Error())
 		return nil, err
 	}
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
+
 	if request.Headers != nil {
+		isUserAgent := false
 		for k, v := range request.Headers {
+			if strings.Contains(v, "User-Agent") {
+				isUserAgent = true
+			}
 			req.Header.Add(k, v)
 		}
+		if !isUserAgent {
+			req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
+		}
+	} else {
+		req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
 	}
 	response, err := client.Do(req)
 	if err != nil {

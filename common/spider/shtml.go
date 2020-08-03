@@ -90,11 +90,19 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	client.SetRetryCount(0)
 	client.SetDoNotParseResponse(true)
 	r := client.R()
-	r.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
 	if request.Headers != nil {
+		isUserAgent := false
 		for k, v := range request.Headers {
+			if strings.Contains(v, "User-Agent") {
+				isUserAgent = true
+			}
 			r.Header.Add(k, v)
 		}
+		if !isUserAgent {
+			r.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
+		}
+	} else {
+		r.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
 	}
 	resp, err := r.Get(request.Url)
 	return resp, err
