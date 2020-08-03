@@ -9,7 +9,6 @@ import (
 	"golang.org/x/net/proxy"
 	"gopkg.in/resty.v1"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"regexp"
 	"strings"
@@ -92,10 +91,9 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	client.SetRetryCount(0)
 	client.SetDoNotParseResponse(true)
 	if request.CookieJarCallBack != nil {
-		jar, _ := cookiejar.New(nil)
 		u, _ := url.Parse(request.Url)
-		jar.SetCookies(u, request.CookieJarCallBack())
-		client.SetCookieJar(jar)
+		CookieJar.SetCookies(u, request.CookieJarCallBack())
+		client.SetCookieJar(CookieJar)
 	}
 	r := client.R()
 	if request.Headers != nil {
