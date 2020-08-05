@@ -19,7 +19,6 @@ func Parser(content, pattern string) (interface{}, error) {
 	}
 }
 
-
 func ParserArticleWithReadability(html string, url string) (map[string]interface{}, error) {
 	starTime := time.Now()
 	parser := readability.NewParser()

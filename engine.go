@@ -17,7 +17,7 @@ type CrawlerEngine struct {
 	redis    *redis.Client
 	limit    *limit.ConcurrentLimit
 	Pipeline *crawler.PipeLine
-	queue    string
+	Queue    string
 	CallBack func(task task.Task, err error)
 }
 
@@ -39,7 +39,7 @@ func New(cfg *Config) *CrawlerEngine {
 	}
 	return &CrawlerEngine{
 		redis:    rdb,
-		queue:    cfg.Queue,
+		Queue:    cfg.Queue,
 		limit:    limit.NewConcurrentLimit(cfg.Concurrent),
 		Pipeline: crawler.New(cfg.Queue, temp.NewTempStorage(rdb)),
 	}
@@ -51,7 +51,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 		maxExecuteCount = 1
 	}
 	for {
-		result, err := p.redis.LPop(ctx, p.queue).Result()
+		result, err := p.redis.LPop(ctx, p.Queue).Result()
 		if err != nil && err != redis.Nil {
 			panic(err)
 		}
@@ -70,7 +70,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 			if err != nil {
 				if task.Retry <= maxExecuteCount {
 					task.Retry += 1
-					err := p.Push(ctx, p.queue, task)
+					err := p.Push(ctx, p.Queue, task)
 					if err != nil {
 						logs.S.Fatal(err)
 					}
