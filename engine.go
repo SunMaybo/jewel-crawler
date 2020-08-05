@@ -10,6 +10,7 @@ import (
 	"github.com/SunMaybo/jewel-crawler/task"
 	"github.com/SunMaybo/jewel-crawler/temp"
 	"github.com/go-redis/redis/v8"
+	"strings"
 	"time"
 )
 
@@ -17,7 +18,7 @@ type CrawlerEngine struct {
 	redis    *redis.Client
 	limit    *limit.ConcurrentLimit
 	Pipeline *crawler.PipeLine
-	Queue    string
+	queue    string
 	CallBack func(task task.Task, err error)
 }
 
@@ -39,7 +40,7 @@ func New(cfg *Config) *CrawlerEngine {
 	}
 	return &CrawlerEngine{
 		redis:    rdb,
-		Queue:    cfg.Queue,
+		queue:    cfg.Queue,
 		limit:    limit.NewConcurrentLimit(cfg.Concurrent),
 		Pipeline: crawler.New(cfg.Queue, temp.NewTempStorage(rdb)),
 	}
@@ -51,41 +52,48 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 		maxExecuteCount = 1
 	}
 	for {
-		result, err := p.redis.LPop(ctx, p.Queue).Result()
-		if err != nil && err != redis.Nil {
-			panic(err)
-		}
-		if err != nil && redis.Nil == err {
-			time.Sleep(5 * time.Millisecond)
-			continue
-		}
-		t := task.Task{}
-		err = json.Unmarshal([]byte(result), &t)
-		if err != nil {
-			panic(err)
-		}
-		t.Redis = p.redis
-		p.limit.Acquire(t, func(task task.Task) {
-			err = p.Pipeline.Invoke(ctx, task)
-			if err != nil {
-				if task.Retry <= maxExecuteCount {
-					task.Retry += 1
-					err := p.Push(ctx, p.Queue, task)
+		queues := strings.Split(p.queue, ",")
+		if len(queues) >= 1 {
+			for _, queue := range queues {
+				result, err := p.redis.LPop(ctx, queue).Result()
+				if err != nil && err != redis.Nil {
+					logs.S.Error(err)
+					time.Sleep(15 * time.Second)
+					continue
+				}
+				if err != nil && redis.Nil == err {
+					time.Sleep(5 * time.Millisecond)
+					continue
+				}
+				t := task.Task{}
+				err = json.Unmarshal([]byte(result), &t)
+				if err != nil {
+					panic(err)
+				}
+				t.Redis = p.redis
+				p.limit.Acquire(t, func(task task.Task) {
+					err = p.Pipeline.Invoke(ctx, task)
 					if err != nil {
-						logs.S.Fatal(err)
+						if task.Retry <= maxExecuteCount {
+							task.Retry += 1
+							err := p.Push(ctx, queue, task)
+							if err != nil {
+								logs.S.Fatal(err)
+							}
+						} else {
+							if p.CallBack != nil {
+								p.CallBack(task, err)
+							}
+						}
+					} else {
+						if p.CallBack != nil {
+							p.CallBack(task, err)
+						}
 					}
-				} else {
-					if p.CallBack != nil {
-						p.CallBack(task, err)
-					}
-				}
-			} else {
-				if p.CallBack != nil {
-					p.CallBack(task, err)
-				}
+					p.limit.Free()
+				})
 			}
-			p.limit.Free()
-		})
+		}
 	}
 
 }
