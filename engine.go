@@ -15,11 +15,12 @@ import (
 )
 
 type CrawlerEngine struct {
-	redis    *redis.Client
-	limit    *limit.ConcurrentLimit
-	Pipeline *crawler.PipeLine
-	queue    string
-	CallBack func(task task.Task, err error)
+	redis         *redis.Client
+	limit         *limit.ConcurrentLimit
+	Pipeline      *crawler.PipeLine
+	queue         string
+	consumerQueue string
+	CallBack      func(task task.Task, err error)
 }
 
 func SetLogLevel(level string) {
@@ -27,9 +28,10 @@ func SetLogLevel(level string) {
 }
 
 type Config struct {
-	Redis      *redis.Options
-	Queue      string
-	Concurrent int
+	Redis         *redis.Options
+	Queue         string
+	ConsumerQueue string
+	Concurrent    int
 }
 
 func New(cfg *Config) *CrawlerEngine {
@@ -39,10 +41,11 @@ func New(cfg *Config) *CrawlerEngine {
 		panic(err)
 	}
 	return &CrawlerEngine{
-		redis:    rdb,
-		queue:    cfg.Queue,
-		limit:    limit.NewConcurrentLimit(cfg.Concurrent),
-		Pipeline: crawler.New(cfg.Queue, temp.NewTempStorage(rdb)),
+		redis:         rdb,
+		queue:         cfg.Queue,
+		consumerQueue: cfg.ConsumerQueue,
+		limit:         limit.NewConcurrentLimit(cfg.Concurrent),
+		Pipeline:      crawler.New(cfg.Queue, temp.NewTempStorage(rdb)),
 	}
 }
 
@@ -52,7 +55,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 		maxExecuteCount = 1
 	}
 	for {
-		queues := strings.Split(p.queue, ",")
+		queues := strings.Split(p.consumerQueue, ",")
 		if len(queues) >= 1 {
 			for _, queue := range queues {
 				result, err := p.redis.LPop(ctx, queue).Result()
