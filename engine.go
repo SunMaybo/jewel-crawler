@@ -102,7 +102,6 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 
 		}
 	}
-}
 
 }
 func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {
