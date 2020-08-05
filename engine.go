@@ -11,6 +11,7 @@ import (
 	"github.com/SunMaybo/jewel-crawler/temp"
 	"github.com/go-redis/redis/v8"
 	"strings"
+	sync2 "sync"
 	"time"
 )
 
@@ -79,8 +80,11 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 					panic(err)
 				}
 				t.Redis = p.redis
+				wait := sync2.WaitGroup{}
+				wait.Add(p.Concurrent)
 				for i := 0; i < p.Concurrent; i++ {
 					go func() {
+						defer wait.Done()
 						err = p.Pipeline.Invoke(ctx, t)
 						if err != nil {
 							if t.Retry <= maxExecuteCount {
@@ -99,8 +103,10 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 								p.CallBack(t, err)
 							}
 						}
+
 					}()
 				}
+				wait.Wait()
 			}
 		}
 	}
