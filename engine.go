@@ -11,7 +11,6 @@ import (
 	"github.com/SunMaybo/jewel-crawler/temp"
 	"github.com/go-redis/redis/v8"
 	"strings"
-	sync2 "sync"
 	"time"
 )
 
@@ -80,36 +79,30 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 					panic(err)
 				}
 				t.Redis = p.redis
-				wait := sync2.WaitGroup{}
-				wait.Add(p.Concurrent)
-				for i := 0; i < p.Concurrent; i++ {
-					go func() {
-						defer wait.Done()
-						err = p.Pipeline.Invoke(ctx, t)
+				err = p.Pipeline.Invoke(ctx, t)
+				if err != nil {
+					if t.Retry <= maxExecuteCount {
+						t.Retry += 1
+						err := p.Push(ctx, queue, t)
 						if err != nil {
-							if t.Retry <= maxExecuteCount {
-								t.Retry += 1
-								err := p.Push(ctx, queue, t)
-								if err != nil {
-									logs.S.Warn(err)
-								}
-							} else {
-								if p.CallBack != nil {
-									p.CallBack(t, err)
-								}
-							}
-						} else {
-							if p.CallBack != nil {
-								p.CallBack(t, err)
-							}
+							logs.S.Warn(err)
 						}
-
-					}()
+					} else {
+						if p.CallBack != nil {
+							p.CallBack(t, err)
+						}
+					}
+				} else {
+					if p.CallBack != nil {
+						p.CallBack(t, err)
+					}
 				}
-				wait.Wait()
+
 			}
+
 		}
 	}
+}
 
 }
 func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {
