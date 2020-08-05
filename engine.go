@@ -19,6 +19,7 @@ type CrawlerEngine struct {
 	limit         *limit.ConcurrentLimit
 	Pipeline      *crawler.PipeLine
 	queue         string
+	Concurrent    int
 	consumerQueue string
 	CallBack      func(task task.Task, err error)
 }
@@ -40,8 +41,12 @@ func New(cfg *Config) *CrawlerEngine {
 	if err != nil {
 		panic(err)
 	}
+	if cfg.Concurrent <= 0 {
+		cfg.Concurrent = 3
+	}
 	return &CrawlerEngine{
 		redis:         rdb,
+		Concurrent:    cfg.Concurrent,
 		queue:         cfg.Queue,
 		consumerQueue: cfg.ConsumerQueue,
 		limit:         limit.NewConcurrentLimit(cfg.Concurrent),
@@ -74,27 +79,28 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 					panic(err)
 				}
 				t.Redis = p.redis
-				p.limit.Acquire(t, func(task task.Task) {
-					err = p.Pipeline.Invoke(ctx, task)
-					if err != nil {
-						if task.Retry <= maxExecuteCount {
-							task.Retry += 1
-							err := p.Push(ctx, queue, task)
-							if err != nil {
-								logs.S.Fatal(err)
+				for i := 0; i < p.Concurrent; i++ {
+					go func() {
+						err = p.Pipeline.Invoke(ctx, t)
+						if err != nil {
+							if t.Retry <= maxExecuteCount {
+								t.Retry += 1
+								err := p.Push(ctx, queue, t)
+								if err != nil {
+									logs.S.Warn(err)
+								}
+							} else {
+								if p.CallBack != nil {
+									p.CallBack(t, err)
+								}
 							}
 						} else {
 							if p.CallBack != nil {
-								p.CallBack(task, err)
+								p.CallBack(t, err)
 							}
 						}
-					} else {
-						if p.CallBack != nil {
-							p.CallBack(task, err)
-						}
-					}
-					p.limit.Free()
-				})
+					}()
+				}
 			}
 		}
 	}
