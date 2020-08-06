@@ -58,7 +58,7 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 			KeepAlive: request.Timeout,
 		}).DialContext,
 		TLSHandshakeTimeout: request.Timeout,
-		ForceAttemptHTTP2: true,
+		ForceAttemptHTTP2:   true,
 	}
 	if request.ProxyCallBack != nil {
 		p := request.ProxyCallBack()

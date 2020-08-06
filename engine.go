@@ -107,8 +107,8 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 					}
 
 				}()
-				wait.Wait()
 			}
+			wait.Wait()
 
 		}
 	}
