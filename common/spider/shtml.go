@@ -7,6 +7,7 @@ import (
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
 	"gopkg.in/resty.v1"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
@@ -39,13 +40,14 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 		}
 		if resp.StatusCode() >= 200 {
 			readerCloser := resp.RawBody()
-			defer readerCloser.Close()
 			var buff []byte
-			buff, err = ReadAll(readerCloser, s.size)
+			buff, err = ioutil.ReadAll(readerCloser)
 			if err != nil {
 				logs.S.Errorw("读取响应数据出错", "err:", err.Error(), "retry", i+1)
 				continue
 			}
+			readerCloser.Close()
+
 			encode := getResponseCharset(resp)
 			return Response{
 				RedirectUrl: resp.RawResponse.Request.URL.String(),
