@@ -2,10 +2,10 @@ package spider
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/hex"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -47,12 +47,8 @@ func (f *FileSpider) Do(request Request) (Response, error) {
 }
 
 func (f *FileSpider) getResponse(request Request) ([]byte, error) {
-	var netTransport *http.Transport
-	netTransport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-		ForceAttemptHTTP2:   true,
+
+	netTransport := &http.Transport{
 	}
 	if request.ProxyCallBack != nil {
 		p := request.ProxyCallBack()
@@ -115,7 +111,7 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 		return nil, err
 	}
 	defer response.Body.Close()
-	data, err := ReadAll(response.Body, f.size)
+	data, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		logs.S.Errorw("读取响应数据出错", "err:", err.Error())
 		return nil, err

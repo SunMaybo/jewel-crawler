@@ -81,6 +81,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 				if err != nil {
 					if t.Retry <= maxExecuteCount {
 						t.Retry += 1
+						t.Timeout = t.Timeout + t.Timeout/3
 						err := p.Push(ctx, p.queue, t)
 						if err != nil {
 							logs.S.Warn(err)

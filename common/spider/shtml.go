@@ -1,7 +1,6 @@
 package spider
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"github.com/SunMaybo/jewel-crawler/common/spider/charset"
@@ -85,13 +84,10 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 		}
 
 	}
-	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
 	client.SetTimeout(request.Timeout)
 	client.SetRetryCount(0)
-	client.SetTransport(&http.Transport{
-		ForceAttemptHTTP2: true,
-	})
+	client.SetRetryMaxWaitTime(request.Timeout / 3)
 	client.SetDoNotParseResponse(true)
 	if s.Jar != nil {
 		client.SetCookieJar(s.Jar)
