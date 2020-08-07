@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -51,12 +50,6 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
-		DialContext: (&net.Dialer{
-			Timeout:   request.Timeout,
-			KeepAlive: request.Timeout,
-		}).DialContext,
-		TLSHandshakeTimeout: request.Timeout,
-		ForceAttemptHTTP2:   true,
 	}
 	if request.ProxyCallBack != nil {
 		p := request.ProxyCallBack()

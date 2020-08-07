@@ -10,8 +10,6 @@ import (
 	"github.com/SunMaybo/jewel-crawler/task"
 	"github.com/SunMaybo/jewel-crawler/temp"
 	"github.com/go-redis/redis/v8"
-	"strings"
-	sync2 "sync"
 	"time"
 )
 
@@ -60,58 +58,52 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 	if maxExecuteCount <= 0 {
 		maxExecuteCount = 1
 	}
+	sem := make(chan int, p.Concurrent)
 	for {
-		queues := strings.Split(p.consumerQueue, ",")
-		if len(queues) >= 1 {
-			wait := sync2.WaitGroup{}
-			wait.Add(p.Concurrent)
-			for i := 0; i < p.Concurrent; i++ {
-				go func() {
-					defer wait.Done()
-					for _, queue := range queues {
-						result, err := p.redis.LPop(ctx, queue).Result()
-						if err != nil && err != redis.Nil {
-							logs.S.Error(err)
-							time.Sleep(15 * time.Second)
-							continue
-						}
-						if err != nil && redis.Nil == err {
-							time.Sleep(5 * time.Millisecond)
-							continue
-						}
-						t := task.Task{}
-						err = json.Unmarshal([]byte(result), &t)
-						if err != nil {
-							panic(err)
-						}
-						t.Redis = p.redis
-						err = p.Pipeline.Invoke(ctx, t)
-						if err != nil {
-							if t.Retry <= maxExecuteCount {
-								t.Retry += 1
-								err := p.Push(ctx, queue, t)
-								if err != nil {
-									logs.S.Warn(err)
-								}
-							} else {
-								if p.CallBack != nil {
-									p.CallBack(t, err)
-								}
-							}
-						} else {
-							if p.CallBack != nil {
-								p.CallBack(t, err)
-							}
-						}
-
-					}
-
-				}()
-			}
-			wait.Wait()
-
+		sem <- 1
+		result, err := p.redis.LPop(ctx, p.queue).Result()
+		if err != nil && err != redis.Nil {
+			logs.S.Error(err)
+			time.Sleep(15 * time.Second)
+			continue
 		}
+		if err != nil && redis.Nil == err {
+			time.Sleep(5 * time.Millisecond)
+			continue
+		}
+		t := task.Task{}
+		err = json.Unmarshal([]byte(result), &t)
+		if err != nil {
+			panic(err)
+		}
+		t.Redis = p.redis
+
+		go func() {
+			defer func() {
+				<-sem
+			}()
+			err = p.Pipeline.Invoke(ctx, t)
+			if err != nil {
+				if t.Retry <= maxExecuteCount {
+					t.Retry += 1
+					err := p.Push(ctx, p.queue, t)
+					if err != nil {
+						logs.S.Warn(err)
+					}
+				} else {
+					if p.CallBack != nil {
+						p.CallBack(t, err)
+					}
+				}
+			} else {
+				if p.CallBack != nil {
+					p.CallBack(t, err)
+				}
+			}
+		}()
+
 	}
+}
 
 }
 func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {

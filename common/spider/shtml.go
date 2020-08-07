@@ -8,7 +8,6 @@ import (
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
 	"gopkg.in/resty.v1"
-	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -91,11 +90,6 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	client.SetTimeout(request.Timeout)
 	client.SetRetryCount(0)
 	client.SetTransport(&http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout:   request.Timeout,
-			KeepAlive: request.Timeout,
-		}).DialContext,
-		TLSHandshakeTimeout: request.Timeout,
 		ForceAttemptHTTP2: true,
 	})
 	client.SetDoNotParseResponse(true)
