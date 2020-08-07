@@ -58,48 +58,45 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 	if maxExecuteCount <= 0 {
 		maxExecuteCount = 1
 	}
-	sem := make(chan int, p.Concurrent)
-	for {
-		sem <- 1
-		result, err := p.redis.LPop(ctx, p.queue).Result()
-		if err != nil && err != redis.Nil {
-			logs.S.Error(err)
-			time.Sleep(15 * time.Second)
-			continue
-		}
-		if err != nil && redis.Nil == err {
-			time.Sleep(5 * time.Millisecond)
-			continue
-		}
-		t := task.Task{}
-		err = json.Unmarshal([]byte(result), &t)
-		if err != nil {
-			panic(err)
-		}
-		t.Redis = p.redis
-
+	for i := 0; i < p.Concurrent; i++ {
 		go func() {
-			defer func() {
-				<-sem
-			}()
-			err = p.Pipeline.Invoke(ctx, t)
-			if err != nil {
-				if t.Retry <= maxExecuteCount {
-					t.Retry += 1
-					err := p.Push(ctx, p.queue, t)
-					if err != nil {
-						logs.S.Warn(err)
+			for {
+				result, err := p.redis.LPop(ctx, p.queue).Result()
+				if err != nil && err != redis.Nil {
+					logs.S.Error(err)
+					time.Sleep(15 * time.Millisecond)
+					continue
+				}
+				if err != nil && redis.Nil == err {
+					time.Sleep(5 * time.Millisecond)
+					continue
+				}
+				t := task.Task{}
+				err = json.Unmarshal([]byte(result), &t)
+				if err != nil {
+					panic(err)
+				}
+				t.Redis = p.redis
+				err = p.Pipeline.Invoke(ctx, t)
+				if err != nil {
+					if t.Retry <= maxExecuteCount {
+						t.Retry += 1
+						err := p.Push(ctx, p.queue, t)
+						if err != nil {
+							logs.S.Warn(err)
+						}
+					} else {
+						if p.CallBack != nil {
+							p.CallBack(t, err)
+						}
 					}
 				} else {
 					if p.CallBack != nil {
 						p.CallBack(t, err)
 					}
 				}
-			} else {
-				if p.CallBack != nil {
-					p.CallBack(t, err)
-				}
 			}
+
 		}()
 
 	}
