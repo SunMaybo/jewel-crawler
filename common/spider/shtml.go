@@ -46,9 +46,8 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 				logs.S.Errorw("读取响应数据出错", "err:", err.Error(), "retry", i+1)
 				continue
 			}
-			readerCloser.Close()
-
 			encode := getResponseCharset(resp)
+			readerCloser.Close()
 			return Response{
 				RedirectUrl: resp.RawResponse.Request.URL.String(),
 				charset:     encode,
