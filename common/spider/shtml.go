@@ -1,6 +1,7 @@
 package spider
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"github.com/SunMaybo/jewel-crawler/common/spider/charset"
@@ -43,7 +44,7 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 			return Response{
 				RedirectUrl: redirectUrl,
 				charset:     encode,
-				body:        charset.MustDecodeBytes( resp.Body(), encode),
+				body:        charset.MustDecodeBytes(resp.Body(), encode),
 				SpiderType:  s.spiderType,
 			}, nil
 		} else {
@@ -54,7 +55,12 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 }
 
 func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
-	client := resty.New()
+	client := resty.NewWithClient(&http.Client{
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+		},
+	})
 	if request.ProxyCallBack != nil {
 		proxy := request.ProxyCallBack()
 		if proxy != "" {
@@ -80,6 +86,7 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
 	client.SetTimeout(request.Timeout)
 	client.SetRetryCount(0)
+	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	client.SetRetryMaxWaitTime(request.Timeout / 3)
 	if s.Jar != nil {
 		client.SetCookieJar(s.Jar)

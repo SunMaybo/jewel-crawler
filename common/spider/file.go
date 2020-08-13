@@ -2,6 +2,7 @@ package spider
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/hex"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
@@ -49,6 +50,8 @@ func (f *FileSpider) Do(request Request) (Response, error) {
 func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 
 	netTransport := &http.Transport{
+		DisableKeepAlives: true,
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 	}
 	if request.ProxyCallBack != nil {
 		p := request.ProxyCallBack()

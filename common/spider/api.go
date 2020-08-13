@@ -2,6 +2,7 @@ package spider
 
 import (
 	"bytes"
+	"crypto/tls"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
 	"io/ioutil"
@@ -46,6 +47,8 @@ func (a *ApiSpider) Do(request Request) (Response, error) {
 
 func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 	netTransport := &http.Transport{
+		DisableKeepAlives: true,
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 	}
 	if request.ProxyCallBack != nil {
 		p := request.ProxyCallBack()
