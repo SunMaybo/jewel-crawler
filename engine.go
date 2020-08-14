@@ -68,7 +68,6 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 					continue
 				}
 				if err != nil && redis.Nil == err {
-					logs.S.Error(err)
 					time.Sleep(5 * time.Millisecond)
 					continue
 				}
