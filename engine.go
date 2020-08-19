@@ -69,7 +69,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 				}
 				if err != nil && redis.Nil == err {
 					time.Sleep(100 * time.Millisecond)
-					logs.S.Infow("队列为空", "queue", p.queue)
+					logs.S.Debugw("队列为空", "queue", p.queue)
 					continue
 				}
 				t := task.Task{}
