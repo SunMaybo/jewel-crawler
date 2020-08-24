@@ -64,11 +64,11 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 				result, err := p.redis.LPop(ctx, p.queue).Result()
 				if err != nil && err != redis.Nil {
 					logs.S.Error(err)
-					time.Sleep(500 * time.Millisecond)
+					time.Sleep(3 * time.Second)
 					continue
 				}
 				if err != nil && redis.Nil == err {
-					time.Sleep(100 * time.Millisecond)
+					time.Sleep(3 * time.Second)
 					logs.S.Debugw("队列为空", "queue", p.queue)
 					continue
 				}
