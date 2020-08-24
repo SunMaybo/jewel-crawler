@@ -127,12 +127,13 @@ func (p *CrawlerEngine) StartBLock(ctx context.Context, maxExecuteCount int, tim
 					continue
 				}
 				if err != nil && err == redis.Nil {
-					logs.S.Error(err)
+					logs.S.Debug(err)
 					time.Sleep(500 * time.Millisecond)
 					continue
 				}
 				for _, s := range result {
 					t := task.Task{}
+					logs.S.Info(s)
 					err = json.Unmarshal([]byte(s), &t)
 					if err != nil {
 						logs.S.Error(err)
