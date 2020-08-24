@@ -109,6 +109,68 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 	}
 
 }
+
+func (p *CrawlerEngine) StartBLock(ctx context.Context, maxExecuteCount int, timeout time.Duration) {
+	if maxExecuteCount <= 0 {
+		maxExecuteCount = 1
+	}
+	if timeout <= 0 {
+		timeout = 3 * time.Second
+	}
+	for i := 0; i < p.Concurrent; i++ {
+		go func() {
+			for {
+				result, err := p.redis.BLPop(ctx, timeout, p.queue).Result()
+				for _, s := range result {
+
+					if err != nil && err != redis.Nil {
+						logs.S.Error(err)
+						time.Sleep(500 * time.Millisecond)
+						continue
+					}
+					if err != nil && redis.Nil == err {
+						time.Sleep(100 * time.Millisecond)
+						logs.S.Debugw("队列为空", "queue", p.queue)
+						continue
+					}
+					t := task.Task{}
+					err = json.Unmarshal([]byte(s), &t)
+					if err != nil {
+						logs.S.Error(err)
+						panic(err)
+					}
+					t.Redis = p.redis
+					err = p.Pipeline.Invoke(ctx, t)
+					if err != nil {
+						if t.Retry <= maxExecuteCount {
+							t.Retry += 1
+							t.Timeout = t.Timeout + t.Timeout/3
+							err := p.Push(ctx, p.queue, t)
+							if err != nil {
+								logs.S.Warn(err)
+							}
+							logs.S.Warnw("处理失败，进行重试", "queue", p.queue, "err", err)
+						} else {
+							logs.S.Errorw("处理失败，任务丢弃", "queue", p.queue, "err", err)
+							if p.CallBack != nil {
+								p.CallBack(t, err)
+							}
+						}
+					} else {
+						logs.S.Infow("处理成功", "queue", p.queue)
+						if p.CallBack != nil {
+							p.CallBack(t, err)
+						}
+					}
+
+				}
+			}
+
+		}()
+
+	}
+
+}
 func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {
 	logs.S.Infow("下发任务", "global_id", task.GlobalId, "url", task.CrawlerUrl)
 	taskStr, _ := json.Marshal(task)
