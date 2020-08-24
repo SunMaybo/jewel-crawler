@@ -121,18 +121,17 @@ func (p *CrawlerEngine) StartBLock(ctx context.Context, maxExecuteCount int, tim
 		go func() {
 			for {
 				result, err := p.redis.BLPop(ctx, timeout, p.queue).Result()
+				if err != nil && err != redis.Nil {
+					logs.S.Error(err)
+					time.Sleep(500 * time.Millisecond)
+					continue
+				}
+				if err != nil && err == redis.Nil {
+					logs.S.Error(err)
+					time.Sleep(500 * time.Millisecond)
+					continue
+				}
 				for _, s := range result {
-
-					if err != nil && err != redis.Nil {
-						logs.S.Error(err)
-						time.Sleep(500 * time.Millisecond)
-						continue
-					}
-					if err != nil && redis.Nil == err {
-						time.Sleep(100 * time.Millisecond)
-						logs.S.Debugw("队列为空", "queue", p.queue)
-						continue
-					}
 					t := task.Task{}
 					err = json.Unmarshal([]byte(s), &t)
 					if err != nil {
