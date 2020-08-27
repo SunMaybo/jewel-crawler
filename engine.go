@@ -58,54 +58,57 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 	if maxExecuteCount <= 0 {
 		maxExecuteCount = 1
 	}
-	for i := 0; i < p.Concurrent; i++ {
-		go func() {
-			for {
-				result, err := p.redis.LPop(ctx, p.queue).Result()
-				if err != nil && err != redis.Nil {
-					panic(err)
-					time.Sleep(3 * time.Second)
-					continue
-				}
-				if err != nil && redis.Nil == err {
-					time.Sleep(15 * time.Second)
-					logs.S.Debugw("队列为空", "queue", p.queue)
-					continue
-				}
-				t := task.Task{}
-				err = json.Unmarshal([]byte(result), &t)
-				if err != nil {
-					logs.S.Error(err)
-					panic(err)
-				}
-				t.Redis = p.redis
-				err = p.Pipeline.Invoke(ctx, t)
-				if err != nil {
-					if t.Retry <= maxExecuteCount {
-						t.Retry += 1
-						t.Timeout = t.Timeout + t.Timeout/3
-						err := p.Push(ctx, p.queue, t)
-						if err != nil {
-							logs.S.Warn(err)
-						}
-						logs.S.Warnw("处理失败，进行重试", "queue", p.queue, "err", err)
-					} else {
-						logs.S.Errorw("处理失败，任务丢弃", "queue", p.queue, "err", err)
-						if p.CallBack != nil {
-							p.CallBack(t, err)
-						}
+	logs.S.Infow("当前处理信息", "Concurrent", p.Concurrent, "queue", p.queue, "maxExecuteCount", maxExecuteCount)
+	sem := make(chan int, p.Concurrent)
+	for {
+		result, err := p.redis.LPop(ctx, p.queue).Result()
+		if err != nil && err != redis.Nil {
+			panic(err)
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		if err != nil && redis.Nil == err {
+			time.Sleep(15 * time.Second)
+			logs.S.Debugw("队列为空", "queue", p.queue)
+			continue
+		}
+		tt := task.Task{}
+		err = json.Unmarshal([]byte(result), &tt)
+		if err != nil {
+			logs.S.Error(err)
+			panic(err)
+		}
+		tt.Redis = p.redis
+
+
+		sem <- 1
+		go func(t task.Task) {
+			defer func() {
+				<-sem
+			}()
+			err := p.Pipeline.Invoke(ctx, t)
+			if err != nil {
+				if t.Retry <= maxExecuteCount {
+					t.Retry += 1
+					t.Timeout = t.Timeout + t.Timeout/3
+					err := p.Push(ctx, p.queue, t)
+					if err != nil {
+						logs.S.Warn(err)
 					}
+					logs.S.Warnw("处理失败，进行重试", "queue", p.queue, "err", err)
 				} else {
-					logs.S.Infow("处理成功", "queue", p.queue)
+					logs.S.Errorw("处理失败，任务丢弃", "queue", p.queue, "err", err)
 					if p.CallBack != nil {
 						p.CallBack(t, err)
 					}
 				}
-
+			} else {
+				logs.S.Infow("处理成功", "queue", p.queue)
+				if p.CallBack != nil {
+					p.CallBack(t, err)
+				}
 			}
-
-		}()
-
+		}(tt)
 	}
 
 }
