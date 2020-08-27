@@ -38,7 +38,7 @@ func New(cfg *Config) *CrawlerEngine {
 	rdb := redis.NewClient(cfg.Redis)
 	_, err := rdb.Ping(context.Background()).Result()
 	if err != nil {
-		panic(err)
+		logs.S.Fatal(err)
 	}
 	if cfg.Concurrent <= 0 {
 		cfg.Concurrent = 3
