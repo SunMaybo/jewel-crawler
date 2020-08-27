@@ -61,12 +61,14 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 	logs.S.Infow("当前处理信息", "Concurrent", p.Concurrent, "queue", p.queue, "maxExecuteCount", maxExecuteCount)
 	sem := make(chan int, p.Concurrent)
 	for {
+		logs.S.Debug("loop task......")
 		result, err := p.redis.LPop(ctx, p.queue).Result()
 		if err != nil && err != redis.Nil {
-			panic(err)
+			logs.S.Error(err)
 			time.Sleep(3 * time.Second)
 			continue
 		}
+		logs.S.Debug("loop task ok......")
 		if err != nil && redis.Nil == err {
 			time.Sleep(15 * time.Second)
 			logs.S.Debugw("队列为空", "queue", p.queue)
@@ -75,12 +77,9 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 		tt := task.Task{}
 		err = json.Unmarshal([]byte(result), &tt)
 		if err != nil {
-			logs.S.Error(err)
-			panic(err)
+			logs.S.Fatal(err)
 		}
 		tt.Redis = p.redis
-
-
 		sem <- 1
 		go func(t task.Task) {
 			defer func() {
@@ -97,16 +96,16 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 					}
 					logs.S.Warnw("处理失败，进行重试", "queue", p.queue, "err", err)
 				} else {
-					logs.S.Errorw("处理失败，任务丢弃", "queue", p.queue, "err", err)
 					if p.CallBack != nil {
 						p.CallBack(t, err)
 					}
+					logs.S.Errorw("处理失败，任务丢弃", "queue", p.queue, "err", err)
 				}
 			} else {
-				logs.S.Infow("处理成功", "queue", p.queue)
 				if p.CallBack != nil {
 					p.CallBack(t, err)
 				}
+				logs.S.Infow("处理成功", "queue", p.queue)
 			}
 		}(tt)
 	}
