@@ -65,13 +65,22 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 	}
 	if request.SocketProxyCallBack != nil {
 		user, pwd, url := request.SocketProxyCallBack()
-		auth := proxy.Auth{
-			User:     user,
-			Password: pwd,
-		}
-		if url != "" {
+
+		if url != "" && user != "" && pwd != "" {
+			auth := proxy.Auth{
+				User:     user,
+				Password: pwd,
+			}
 			// 设置代理
 			dialer, err := proxy.SOCKS5("tcp", url, &auth, proxy.Direct)
+			if err != nil {
+				logs.S.Error(err)
+				return nil, err
+			}
+			netTransport.Dial = dialer.Dial
+		} else if url != "" {
+			// 设置代理
+			dialer, err := proxy.SOCKS5("tcp", url,nil, proxy.Direct)
 			if err != nil {
 				logs.S.Error(err)
 				return nil, err

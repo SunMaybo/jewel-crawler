@@ -70,8 +70,18 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	if request.SocketProxyCallBack != nil {
 		// create a dialer
 		u, p, a := request.SocketProxyCallBack()
-		if a != "" {
+		if a != "" && u != "" && p != "" {
 			dialer, err := proxy.SOCKS5("tcp", a, &proxy.Auth{User: u, Password: p}, proxy.Direct)
+			if err != nil {
+				logs.S.Error("Unable to obtain proxy dialer: %v\n", err)
+			}
+
+			// create a transport
+			ptransport := &http.Transport{Dial: dialer.Dial}
+			// set transport into resty
+			resty.SetTransport(ptransport)
+		} else if a != "" {
+			dialer, err := proxy.SOCKS5("tcp", a, nil, proxy.Direct)
 			if err != nil {
 				logs.S.Error("Unable to obtain proxy dialer: %v\n", err)
 			}
