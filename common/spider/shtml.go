@@ -45,7 +45,7 @@ func NewSingleShtmlSpider(size int, timeout time.Duration, transport *http.Trans
 		size:             size,
 		disableKeepAlive: false,
 	}
-	if transport != nil {
+	if transport == nil {
 		transport = &http.Transport{
 		}
 	}

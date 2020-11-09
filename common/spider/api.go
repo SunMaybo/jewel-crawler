@@ -44,7 +44,7 @@ func NewSingleApiSpider(size int, timeout time.Duration, transport *http.Transpo
 		size:             size,
 		disableKeepAlive: false,
 	}
-	if transport != nil {
+	if transport == nil {
 		transport = &http.Transport{}
 	}
 	client := &http.Client{Timeout: timeout, Transport: transport}
