@@ -11,20 +11,50 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 )
 
 type ShtmlSpider struct {
-	spiderType SpiderType
-	size       int
-	Jar        http.CookieJar
+	spiderType       SpiderType
+	size             int
+	Jar              http.CookieJar
+	disableKeepAlive bool
+	client           *resty.Client
 }
+
+var shtmlSpiderLock sync.Mutex
+var shtmlSpider *ShtmlSpider
 
 //请求数据最大size限制
 func NewShtmlSpider(size int) *ShtmlSpider {
 	return &ShtmlSpider{
-		spiderType: Shtml,
-		size:       size,
+		spiderType:       Shtml,
+		size:             size,
+		disableKeepAlive: true,
 	}
+}
+func NewSingleShtmlSpider(size int, timeout time.Duration, transport *http.Transport) *ShtmlSpider {
+	if shtmlSpider != nil {
+		return shtmlSpider
+	}
+	shtmlSpiderLock.Lock()
+	defer shtmlSpiderLock.Unlock()
+	shtmlSpider = &ShtmlSpider{
+		spiderType:       Shtml,
+		size:             size,
+		disableKeepAlive: false,
+	}
+	client := resty.NewWithClient(&http.Client{
+		Transport: transport,
+	})
+	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
+	client.SetTimeout(timeout)
+	client.SetRetryCount(0)
+	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	client.SetRetryMaxWaitTime(timeout / 3)
+	shtmlSpider.client = client
+	return shtmlSpider
 }
 func (s *ShtmlSpider) Do(request Request) (Response, error) {
 	if request.Retry <= 0 {
@@ -54,10 +84,13 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 	return Response{}, err
 }
 
-func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
+func (s *ShtmlSpider) getClient(request Request) *resty.Client {
+	if !s.disableKeepAlive {
+		return s.client
+	}
 	client := resty.NewWithClient(&http.Client{
 		Transport: &http.Transport{
-			DisableKeepAlives: true,
+			DisableKeepAlives: s.disableKeepAlive,
 			TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 		},
 	})
@@ -75,7 +108,6 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 			if err != nil {
 				logs.S.Error("Unable to obtain proxy dialer: %v\n", err)
 			}
-
 			// create a transport
 			ptransport := &http.Transport{Dial: dialer.Dial}
 			// set transport into resty
@@ -104,6 +136,11 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	if request.CookieCallBack != nil {
 		client.SetCookies(request.CookieCallBack())
 	}
+	return client
+}
+
+func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
+	client := s.getClient(request)
 	r := client.R()
 	if request.Headers != nil {
 		isUserAgent := false

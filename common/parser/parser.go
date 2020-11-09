@@ -34,6 +34,7 @@ func ParserArticleWithReadability(html string, url string) (map[string]interface
 		resultMap["author"] = article.Byline
 		resultMap["source_name"] = article.SourceName
 		resultMap["content"] = article.Content
+		resultMap["image"] = article.Image
 		logs.S.Infow("规则匹配耗时", "interval", time.Since(starTime).String())
 		return resultMap, nil
 	}

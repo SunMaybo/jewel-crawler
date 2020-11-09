@@ -9,20 +9,44 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
+	"time"
 )
 
+var apiLock sync.Mutex
+var apiSpider *ApiSpider
+
 type ApiSpider struct {
-	spiderType SpiderType
-	size       int
-	Jar        http.CookieJar
+	spiderType       SpiderType
+	size             int
+	disableKeepAlive bool
+	client           *http.Client
+	Jar              http.CookieJar
 }
 
 //请求数据最大size限制
 func NewApiSpider(size int) *ApiSpider {
 	return &ApiSpider{
-		spiderType: Api,
-		size:       size,
+		spiderType:       Api,
+		size:             size,
+		disableKeepAlive: true,
 	}
+}
+
+func NewSingleApiSpider(size int, timeout time.Duration, transport *http.Transport) *ApiSpider {
+	if apiSpider != nil {
+		return apiSpider
+	}
+	apiLock.Lock()
+	defer apiLock.Unlock()
+	apiSpider = &ApiSpider{
+		spiderType:       Api,
+		size:             size,
+		disableKeepAlive: false,
+	}
+	client := &http.Client{Timeout: timeout, Transport: transport}
+	apiSpider.client = client
+	return apiSpider
 }
 func (a *ApiSpider) Do(request Request) (Response, error) {
 	if request.Retry <= 0 {
@@ -45,7 +69,10 @@ func (a *ApiSpider) Do(request Request) (Response, error) {
 	return Response{}, err
 }
 
-func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
+func (a *ApiSpider) getClient(request Request) (*http.Client, error) {
+	if !a.disableKeepAlive {
+		return a.client, nil
+	}
 	netTransport := &http.Transport{
 		DisableKeepAlives: true,
 		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
@@ -63,7 +90,6 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 	}
 	if request.SocketProxyCallBack != nil {
 		user, pwd, url := request.SocketProxyCallBack()
-
 		if url != "" && user != "" && pwd != "" {
 			// 设置代理
 			auth := proxy.Auth{
@@ -91,6 +117,11 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 	if a.Jar != nil {
 		client.Jar = a.Jar
 	}
+	return client, nil
+}
+
+func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
+
 	req, err := http.NewRequest(request.Method, request.Url, bytes.NewReader([]byte(request.Param)))
 	if err != nil {
 		logs.S.Errorw("请求数据出错", "error", err.Error())
@@ -115,6 +146,10 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 		}
 	} else {
 		req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
+	}
+	client, err := a.getClient(request)
+	if err != nil {
+		return nil, err
 	}
 	response, err := client.Do(req)
 	if err != nil {

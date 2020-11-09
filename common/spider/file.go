@@ -10,20 +10,40 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 )
 
 type FileSpider struct {
-	spiderType SpiderType
-	size       int
-	Jar        http.CookieJar
+	disableKeepAlive bool
+	spiderType       SpiderType
+	size             int
+	Jar              http.CookieJar
 }
+
+var fileSpiderLock sync.Mutex
+
+var fileSpider *FileSpider
 
 //请求数据最大size限制
 func NewFileSpider(size int) *FileSpider {
 	return &FileSpider{
-		spiderType: File,
-		size:       size,
+		spiderType:       File,
+		size:             size,
+		disableKeepAlive: true,
 	}
+}
+func NewSingleFileSpider(size int) *FileSpider {
+	if fileSpider != nil {
+		return fileSpider
+	}
+	fileSpiderLock.Lock()
+	defer fileSpiderLock.Unlock()
+	fileSpider = &FileSpider{
+		spiderType:       File,
+		size:             size,
+		disableKeepAlive: false,
+	}
+	return fileSpider
 }
 func (f *FileSpider) Do(request Request) (Response, error) {
 	if request.Retry <= 0 {
@@ -50,7 +70,7 @@ func (f *FileSpider) Do(request Request) (Response, error) {
 func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 
 	netTransport := &http.Transport{
-		DisableKeepAlives: true,
+		DisableKeepAlives: f.disableKeepAlive,
 		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 	}
 	if request.ProxyCallBack != nil {
@@ -80,7 +100,7 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 			netTransport.Dial = dialer.Dial
 		} else if url != "" {
 			// 设置代理
-			dialer, err := proxy.SOCKS5("tcp", url,nil, proxy.Direct)
+			dialer, err := proxy.SOCKS5("tcp", url, nil, proxy.Direct)
 			if err != nil {
 				logs.S.Error(err)
 				return nil, err
