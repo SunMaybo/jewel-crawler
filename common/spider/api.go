@@ -66,7 +66,7 @@ func (a *ApiSpider) Do(request Request) (Response, error) {
 			}
 			return resp, nil
 		} else {
-			logs.S.Warnw("retry request err", "url", request.Url, "err", err.Error(), "retry", i+1)
+			logs.S.Warnw("redirect request err", "url", request.Url, "err", err.Error(), "redirect", i+1)
 		}
 	}
 	return Response{}, err
@@ -139,7 +139,7 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 	if request.Headers != nil {
 		isUserAgent := false
 		for k, v := range request.Headers {
-			if strings.Contains(v, "User-Agent") {
+			if strings.Contains(k, "User-Agent") {
 				isUserAgent = true
 			}
 			req.Header.Add(k, v)

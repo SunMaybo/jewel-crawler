@@ -26,7 +26,7 @@ type Task struct {
 	Method        string                 `json:"method"`
 	Param         string                 `json:"param"`
 	Header        map[string]string      `json:"header"`
-	Retry         int                    `json:"retry"`
+	Retry         int                    `json:"redirect"`
 	Total         int                    `json:"total"`
 	Timeout       time.Duration          `json:"timeout"`
 	Time          int64                  `json:"time"`

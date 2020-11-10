@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/SunMaybo/jewel-crawler/common/spider/charset"
+	"github.com/SunMaybo/jewel-crawler/common/spider/redirect"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
-	"gopkg.in/resty.v1"
+	resty "gopkg.in/resty.v1"
 	"net/http"
 	"regexp"
 	"strings"
@@ -52,7 +53,7 @@ func NewSingleShtmlSpider(size int, timeout time.Duration, transport *http.Trans
 	client := resty.NewWithClient(&http.Client{
 		Transport: transport,
 	})
-	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
+	client.SetRedirectPolicy(redirect.FlexibleRedirectPolicy(20))
 	client.SetTimeout(timeout)
 	client.SetRetryCount(0)
 	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
@@ -69,7 +70,7 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 		var resp *resty.Response
 		resp, err = s.getResponse(request)
 		if err != nil {
-			logs.S.Errorw("请求数据出错", "error", err.Error(), "retry", i+1)
+			logs.S.Errorw("请求数据出错", "error", err.Error(), "redirect", i+1)
 			continue
 		}
 		if resp.StatusCode() >= 200 {
@@ -149,7 +150,7 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	if request.Headers != nil {
 		isUserAgent := false
 		for k, v := range request.Headers {
-			if strings.Contains(v, "User-Agent") {
+			if strings.Contains(k, "User-Agent") {
 				isUserAgent = true
 			}
 			r.Header.Add(k, v)
