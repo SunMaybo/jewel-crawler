@@ -130,7 +130,7 @@ func (s *ShtmlSpider) getClient(request Request) *resty.Client {
 		}
 
 	}
-	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
+	client.SetRedirectPolicy(redirect.FlexibleRedirectPolicy(20))
 	client.SetTimeout(request.Timeout)
 	client.SetRetryCount(0)
 	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
