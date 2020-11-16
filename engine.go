@@ -130,48 +130,44 @@ func (p *CrawlerEngine) StartBLock(ctx context.Context, maxExecuteCount int, tim
 				}
 				if err != nil && err == redis.Nil {
 					logs.S.Debug(err)
-					time.Sleep(500 * time.Millisecond)
 					continue
 				}
-				for _, s := range result {
-					t := task.Task{}
-					logs.S.Info(s)
-					err = json.Unmarshal([]byte(s), &t)
-					if err != nil {
-						logs.S.Error(err)
-						panic(err)
-					}
-					t.Redis = p.redis
-					err = p.Pipeline.Invoke(ctx, t)
-					if err != nil {
-						if t.Retry <= maxExecuteCount {
-							t.Retry += 1
-							t.Timeout = t.Timeout + t.Timeout/3
-							err := p.Push(ctx, p.queue, t)
-							if err != nil {
-								logs.S.Warn(err)
-							}
-							logs.S.Warnw("处理失败，进行重试", "queue", p.queue, "err", err)
-						} else {
-							logs.S.Errorw("处理失败，任务丢弃", "queue", p.queue, "err", err)
-							if p.CallBack != nil {
-								p.CallBack(t, err)
-							}
+				s := result[1]
+				t := task.Task{}
+				logs.S.Info(result)
+				err = json.Unmarshal([]byte(s), &t)
+				if err != nil {
+					logs.S.Error(err)
+					panic(err)
+				}
+				t.Redis = p.redis
+				err = p.Pipeline.Invoke(ctx, t)
+				if err != nil {
+					if t.Retry <= maxExecuteCount {
+						t.Retry += 1
+						t.Timeout = t.Timeout + t.Timeout/3
+						err := p.Push(ctx, p.queue, t)
+						if err != nil {
+							logs.S.Warn(err)
 						}
+						logs.S.Warnw("处理失败，进行重试", "queue", p.queue, "err", err)
 					} else {
-						logs.S.Infow("处理成功", "queue", p.queue)
+						logs.S.Errorw("处理失败，任务丢弃", "queue", p.queue, "err", err)
 						if p.CallBack != nil {
 							p.CallBack(t, err)
 						}
 					}
-
+				} else {
+					logs.S.Infow("处理成功", "queue", p.queue)
+					if p.CallBack != nil {
+						p.CallBack(t, err)
+					}
 				}
+
 			}
 
 		}()
-
 	}
-
 }
 func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {
 	logs.S.Infow("下发任务", "global_id", task.GlobalId, "url", task.CrawlerUrl)
