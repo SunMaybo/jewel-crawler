@@ -38,6 +38,7 @@ type Response struct {
 	body        []byte
 	charset     string
 	RedirectUrl string
+	Cookies     []*http.Cookie
 	SpiderType  SpiderType
 }
 

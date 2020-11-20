@@ -81,6 +81,7 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 				charset:     encode,
 				body:        charset.MustDecodeBytes(resp.Body(), encode),
 				SpiderType:  s.spiderType,
+				Cookies: resp.Cookies(),
 			}, nil
 		} else {
 			return Response{}, errors.New(fmt.Sprintf("shtml rquest err statusCode:%d", resp.StatusCode()))

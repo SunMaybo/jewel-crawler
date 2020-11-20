@@ -7,17 +7,22 @@ import (
 )
 
 func TestNewShtmlSpider(t *testing.T) {
-	sp := NewShtmlSpider(1 * 1024 * 1024)
+	sp := NewCloudflareSpider(1 * 1024 * 1024)
 	resp, err := sp.Do(Request{
-		Url:     "https://www.christies.com/South-Asian-Modern--28430.aspx?lid=1",
-		Method:  "GET",
+		Url:    "https://rarbgproxied.org/torrents.php?category=2;18;41;49&page=1",
+		Method: "GET",
 		Headers: map[string]string{
-			"content-type":     "application/json; charset=UTF-8",
-			"origin":           "https://onlineonly.christies.com",
-			"sec-fetch-dest":   "empty",
-			"sec-fetch-mode":   "cors",
-			"sec-fetch-site":   "same-origin",
-			"x-requested-with": "XMLHttpRequest",
+			"accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+			//"accept-encoding":           "gzip, deflate, br",
+			"accept-language":           "zh-CN,zh;q=0.9,en;q=0.8",
+			"cache-control":             "no-cache",
+			"cookie":                    "__cfduid=d74a2ce216735c9c3824f9d8b6630a2ce1605234630; gaDts48g=q8h5pp9t; tcc; aby=2; SL_GWPT_Show_Hide_tmp=1; SL_wptGlobTipTmp=1; gaDts48g=q8h5pp9t; cf_clearance=b92bd96a8d21feeabe61ac4bf6fe0a70493944af-1605681737-0-150; ppu_main_9ef78edf998c4df1e1636c9a474d9f47=1; skt=IGX6Uufhj9; skt=IGX6Uufhj9; expla=2; ppu_sub_9ef78edf998c4df1e1636c9a474d9f47=2; ppu_delay_9ef78edf998c4df1e1636c9a474d9f47=1",
+			"pragma":                    "no-cache",
+			"sec-fetch-dest":            "document",
+			"sec-fetch-mode":            "navigate",
+			"sec-fetch-site":            "none",
+			"sec-fetch-user":            "?1",
+			"upgrade-insecure-requests": "1",
 		},
 		ProxyCallBack: func() string {
 			return "http://127.0.0.1:7890"
