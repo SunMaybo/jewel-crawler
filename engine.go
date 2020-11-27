@@ -10,6 +10,7 @@ import (
 	"github.com/SunMaybo/jewel-crawler/task"
 	"github.com/SunMaybo/jewel-crawler/temp"
 	"github.com/go-redis/redis/v8"
+	"github.com/yangwenmai/ratelimit/simpleratelimit"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type CrawlerEngine struct {
 	queue         string
 	Concurrent    int
 	consumerQueue string
+	RateLimiter   *simpleratelimit.RateLimiter
 	CallBack      func(task task.Task, err error)
 }
 
@@ -49,6 +51,7 @@ func New(cfg *Config) *CrawlerEngine {
 		queue:         cfg.Queue,
 		consumerQueue: cfg.ConsumerQueue,
 		limit:         limit.NewConcurrentLimit(cfg.Concurrent),
+		RateLimiter:   simpleratelimit.New(cfg.Concurrent, time.Second),
 		Pipeline:      crawler.New(cfg.Queue, temp.NewTempStorage(rdb)),
 	}
 }
@@ -59,7 +62,7 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 		maxExecuteCount = 1
 	}
 	logs.S.Infow("当前处理信息", "Concurrent", p.Concurrent, "queue", p.queue, "maxExecuteCount", maxExecuteCount)
-	sem := make(chan int, p.Concurrent)
+
 	for {
 		logs.S.Debug("loop task......")
 		result, err := p.redis.LPop(ctx, p.queue).Result()
@@ -80,11 +83,11 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 			logs.S.Fatal(err)
 		}
 		tt.Redis = p.redis
-		sem <- 1
+		for p.RateLimiter.Limit() {
+			time.Sleep(100 * time.Millisecond)
+		}
 		go func(t task.Task) {
-			defer func() {
-				<-sem
-			}()
+
 			err := p.Pipeline.Invoke(ctx, t)
 			if err != nil {
 				if t.Retry <= maxExecuteCount {

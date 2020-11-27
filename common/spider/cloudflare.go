@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/SunMaybo/jewel-crawler/common/parser"
-	"mime/multipart"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -58,22 +58,41 @@ func (f *CloudflareSpider) Do(request Request) (Response, error) {
 	}
 	url := dataMap["url"].(string)
 	url = u.Scheme + "://" + u.Host + url
-	payload := &bytes.Buffer{}
-	writer := multipart.NewWriter(payload)
+	var params []string
 	if dataMap["params"] != nil {
 		paramInters := dataMap["params"].([]interface{})
 		for _, paramInter := range paramInters {
 			paramMap := paramInter.(map[string]interface{})
-			writer.WriteField(paramMap["name"].(string), paramMap["value"].(string))
+			params = append(params, paramMap["name"].(string)+"="+paramMap["value"].(string))
 		}
 	}
-	err = writer.Close()
-	if err != nil {
-		return Response{}, nil
-	}
-	request.Param = payload.String()
-	request.Headers["Content-Type"] = writer.FormDataContentType()
+	request.Param = strings.Join(params, "&")
+	request.Headers["Content-Type"] = "application/x-www-form-urlencoded"
 	request.Url = url
 	request.Method = dataMap["method"].(string)
 	return f.fileSpider.Do(request)
+	//resp.Header.Add("Content-Type", writer.FormDataContentType())
+	//result, err := crawler(url, dataMap["method"].(string), resp.Header, payload)
+	//if err != nil {
+	//	return Response{}, nil
+	//}
+	//return Response{
+	//	body: []byte(result),
+	//}, nil
+}
+
+func crawler(url, method string, header http.Header, payload *bytes.Buffer) (string, error) {
+
+	client := &http.Client{
+	}
+	req, err := http.NewRequest(method, url, payload)
+
+	if err != nil {
+		return "", err
+	}
+	req.Header = header
+	res, err := client.Do(req)
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	return string(body), nil
 }

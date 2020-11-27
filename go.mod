@@ -14,10 +14,10 @@ require (
 	github.com/mitchellh/mapstructure v1.3.2 // indirect
 	github.com/storyicon/graphquery v0.0.0-20190317074716-6a20a75cd98f
 	github.com/tidwall/gjson v1.6.0 // indirect
+	github.com/yangwenmai/ratelimit v0.0.0-20180104140304-44221c2292e1
 	github.com/yuin/charsetutil v1.0.0 // indirect
 	go.uber.org/zap v1.15.0
 	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
 	golang.org/x/text v0.3.2
 	gopkg.in/resty.v1 v1.12.0
 )
-
