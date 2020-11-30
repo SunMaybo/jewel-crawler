@@ -83,7 +83,7 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 				readerCloser := resp.RawBody()
 				buff, err := ReadAll(readerCloser, s.size)
 				if err != nil {
-					logs.S.Errorw("读取响应数据出错", "err:", err.Error(), "retry", i+1)
+					logs.S.Errorw("读取响应数据出错", "err:", err.Error(), "retry", i+1, "url", request.Url)
 					continue
 				}
 				readerCloser.Close()
