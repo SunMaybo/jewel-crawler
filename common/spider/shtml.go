@@ -76,10 +76,23 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 		if resp.StatusCode() >= 200 {
 			redirectUrl := resp.RawResponse.Request.URL.String()
 			encode := getResponseCharset(resp)
+			var body []byte
+			if filterNotHtml(encode) {
+				body = []byte("content_type is illegal:" + encode)
+			} else {
+				readerCloser := resp.RawBody()
+				buff, err := ReadAll(readerCloser, s.size)
+				if err != nil {
+					logs.S.Errorw("读取响应数据出错", "err:", err.Error(), "retry", i+1)
+					continue
+				}
+				readerCloser.Close()
+				body = charset.MustDecodeBytes(buff, encode)
+			}
 			return Response{
 				RedirectUrl: redirectUrl,
 				charset:     encode,
-				body:        charset.MustDecodeBytes(resp.Body(), encode),
+				body:        body,
 				SpiderType:  s.spiderType,
 				Cookies:     resp.Cookies(),
 				Header:      resp.Header(),
@@ -101,6 +114,7 @@ func (s *ShtmlSpider) getClient(request Request) *resty.Client {
 			TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 		},
 	})
+	client.SetDoNotParseResponse(true)
 	if request.ProxyCallBack != nil {
 		proxy := request.ProxyCallBack()
 		if proxy != "" {
@@ -188,4 +202,24 @@ func getResponseCharset(response *resty.Response) string {
 		}
 	}
 	return ""
+}
+func filterNotHtml(contentType string) bool {
+	contentTypes := []string{
+		"text/html",
+		"text/plain",
+		"text/xml",
+		"application/xhtml+xml",
+		"application/xml",
+		"application/atom+xml",
+		"application/json",
+	}
+	if contentType == "" {
+		return false
+	}
+	for _, s := range contentTypes {
+		if strings.Contains(strings.ToLower(contentType), strings.ToLower(s)) {
+			return false
+		}
+	}
+	return true
 }
