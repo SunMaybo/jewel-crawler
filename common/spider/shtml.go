@@ -212,6 +212,7 @@ func filterNotHtml(contentType string) bool {
 		"application/xml",
 		"application/atom+xml",
 		"application/json",
+		"utf-8",
 	}
 	if contentType == "" {
 		return false
