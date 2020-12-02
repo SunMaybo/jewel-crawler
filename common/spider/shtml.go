@@ -77,7 +77,8 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 			redirectUrl := resp.RawResponse.Request.URL.String()
 			encode := getResponseCharset(resp)
 			var body []byte
-			if filterNotHtml(encode) {
+			charsetStrs := resp.Header()["Content-Type"]
+			if filterNotHtml(charsetStrs) {
 				body = []byte("content_type is illegal:" + encode)
 			} else {
 				readerCloser := resp.RawBody()
@@ -203,7 +204,7 @@ func getResponseCharset(response *resty.Response) string {
 	}
 	return ""
 }
-func filterNotHtml(contentType string) bool {
+func filterNotHtml(contentType []string) bool {
 	contentTypes := []string{
 		"text/html",
 		"text/plain",
@@ -213,14 +214,19 @@ func filterNotHtml(contentType string) bool {
 		"application/atom+xml",
 		"application/json",
 		"utf-8",
+		"gb2312",
+		"gbk",
 	}
-	if contentType == "" {
+	if len(contentType) <= 0 {
 		return false
 	}
 	for _, s := range contentTypes {
-		if strings.Contains(strings.ToLower(contentType), strings.ToLower(s)) {
-			return false
+		for _, s2 := range contentType {
+			if strings.Contains(strings.ToLower(s2), strings.ToLower(s)) {
+				return false
+			}
 		}
+
 	}
 	return true
 }
