@@ -19,7 +19,9 @@ func NewDhtmlSpider() *DhtmlSpider {
 	}
 }
 func (d *DhtmlSpider) Do(request Request) (Response, error) {
-	ctx, cancel := chromedp.NewContext(context.Background())
+	contextTimeout, timeoutfunc := context.WithTimeout(context.Background(), request.Timeout)
+	defer timeoutfunc()
+	ctx, cancel := chromedp.NewContext(contextTimeout)
 	defer cancel()
 	var (
 		res string
@@ -36,8 +38,8 @@ func (d *DhtmlSpider) Do(request Request) (Response, error) {
 		chromedp.Emulate(device.IPad),
 		chromedp.EmulateViewport(1024, 2048, chromedp.EmulateScale(2)),
 		chromedp.Navigate(request.Url),
-		chromedp.NodeIDs(`document`, &ids, chromedp.ByJSPath),
 		chromedp.Sleep(request.Timeout),
+		chromedp.NodeIDs(`document`, &ids, chromedp.ByJSPath),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			var err error
 			res, err = dom.GetOuterHTML().WithNodeID(ids[0]).Do(ctx)

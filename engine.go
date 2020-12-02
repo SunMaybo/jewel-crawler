@@ -87,7 +87,6 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 			time.Sleep(100 * time.Millisecond)
 		}
 		go func(t task.Task) {
-
 			err := p.Pipeline.Invoke(ctx, t)
 			if err != nil {
 				if t.Retry <= maxExecuteCount {
@@ -115,9 +114,9 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 
 }
 
-func (p *CrawlerEngine) StartBLock(ctx context.Context, maxExecuteCount int, timeout time.Duration) {
-	if maxExecuteCount <= 0 {
-		maxExecuteCount = 1
+func (p *CrawlerEngine) StartThread(ctx context.Context, threads int, timeout time.Duration) {
+	if threads <= 0 {
+		threads = 1
 	}
 	if timeout <= 0 {
 		timeout = 3 * time.Second
@@ -125,7 +124,7 @@ func (p *CrawlerEngine) StartBLock(ctx context.Context, maxExecuteCount int, tim
 	for i := 0; i < p.Concurrent; i++ {
 		go func() {
 			for {
-				result, err := p.redis.BLPop(ctx, timeout, p.queue).Result()
+				result, err := p.redis.LPop(ctx, p.queue).Result()
 				if err != nil && err != redis.Nil {
 					logs.S.Error(err)
 					time.Sleep(500 * time.Millisecond)
@@ -133,12 +132,11 @@ func (p *CrawlerEngine) StartBLock(ctx context.Context, maxExecuteCount int, tim
 				}
 				if err != nil && err == redis.Nil {
 					logs.S.Debug(err)
+					time.Sleep(500 * time.Millisecond)
 					continue
 				}
-				s := result[1]
 				t := task.Task{}
-				logs.S.Info(result)
-				err = json.Unmarshal([]byte(s), &t)
+				err = json.Unmarshal([]byte(result), &t)
 				if err != nil {
 					logs.S.Error(err)
 					panic(err)
@@ -146,7 +144,7 @@ func (p *CrawlerEngine) StartBLock(ctx context.Context, maxExecuteCount int, tim
 				t.Redis = p.redis
 				err = p.Pipeline.Invoke(ctx, t)
 				if err != nil {
-					if t.Retry <= maxExecuteCount {
+					if t.Retry <= threads {
 						t.Retry += 1
 						t.Timeout = t.Timeout + t.Timeout/3
 						err := p.Push(ctx, p.queue, t)

@@ -40,14 +40,11 @@ func TestNewShtmlSpider(t *testing.T) {
 }
 
 func TestNewApiSpider(t *testing.T) {
-	sp := NewApiSpider(1 * 1024 * 1024)
+	sp := NewDhtmlSpider()
 	resp, err := sp.Do(Request{
 		Url:     "https://zxp.artron.net/specials/goods/index/?specialid=6231&auctionstatus=3&page=2&perpage=20&ordertype=1",
 		Method:  "GET",
 		Timeout: 5 * time.Second,
-		ProxyCallBack: func() string {
-			return "http://127.0.0.1:7890"
-		},
 	})
 	if err != nil {
 		t.Fatal(err)
