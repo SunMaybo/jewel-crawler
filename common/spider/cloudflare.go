@@ -33,7 +33,7 @@ func NewCloudflareSpider(size int) *CloudflareSpider {
 
 func (f *CloudflareSpider) Do(request Request) (Response, error) {
 	pattern := "{\n  url `css(\"form\");attr(\"action\")`\n  method `css(\"form\");attr(\"method\")`\n  params `css(\"input\")`[{\n   name `attr(\"name\")`\n   value `attr(\"value\")`\n\n}]\n\n}"
-	shtml := NewShtmlSpider(1024)
+	shtml := NewShtmlSpider(f.size)
 	resp, err := shtml.Do(request)
 	if err != nil {
 		return Response{}, err
