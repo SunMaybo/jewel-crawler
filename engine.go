@@ -114,25 +114,23 @@ func (p *CrawlerEngine) Start(ctx context.Context, maxExecuteCount int) {
 
 }
 
-func (p *CrawlerEngine) StartThread(ctx context.Context, threads int, timeout time.Duration) {
-	if threads <= 0 {
-		threads = 1
-	}
-	if timeout <= 0 {
-		timeout = 3 * time.Second
+//开启
+func (p *CrawlerEngine) StartThread(ctx context.Context, maxExecuteCount int) {
+	if maxExecuteCount <= 0 {
+		maxExecuteCount = 1
 	}
 	for i := 0; i < p.Concurrent; i++ {
 		go func() {
 			for {
 				result, err := p.redis.LPop(ctx, p.queue).Result()
 				if err != nil && err != redis.Nil {
-					logs.S.Error(err)
-					time.Sleep(500 * time.Millisecond)
+					panic(err)
+					time.Sleep(3 * time.Second)
 					continue
 				}
-				if err != nil && err == redis.Nil {
-					logs.S.Debug(err)
-					time.Sleep(500 * time.Millisecond)
+				if err != nil && redis.Nil == err {
+					time.Sleep(15 * time.Second)
+					logs.S.Debugw("队列为空", "queue", p.queue)
 					continue
 				}
 				t := task.Task{}
@@ -144,7 +142,7 @@ func (p *CrawlerEngine) StartThread(ctx context.Context, threads int, timeout ti
 				t.Redis = p.redis
 				err = p.Pipeline.Invoke(ctx, t)
 				if err != nil {
-					if t.Retry <= threads {
+					if t.Retry <= maxExecuteCount {
 						t.Retry += 1
 						t.Timeout = t.Timeout + t.Timeout/3
 						err := p.Push(ctx, p.queue, t)
@@ -168,8 +166,11 @@ func (p *CrawlerEngine) StartThread(ctx context.Context, threads int, timeout ti
 			}
 
 		}()
+
 	}
+
 }
+
 func (p *CrawlerEngine) Push(ctx context.Context, queue string, task task.Task) error {
 	logs.S.Infow("下发任务", "global_id", task.GlobalId, "url", task.CrawlerUrl)
 	taskStr, _ := json.Marshal(task)

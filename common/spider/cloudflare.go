@@ -70,6 +70,11 @@ func (f *CloudflareSpider) Do(request Request) (Response, error) {
 	request.Headers["Content-Type"] = "application/x-www-form-urlencoded"
 	request.Url = url
 	request.Method = dataMap["method"].(string)
+	var cookies []string
+	for _, cookie := range resp.Cookies {
+		cookies = append(cookies, cookie.Name+"="+cookie.Value)
+	}
+	request.Headers["cookie"] = strings.Join(cookies, ";")
 	return f.fileSpider.Do(request)
 	//resp.Header.Add("Content-Type", writer.FormDataContentType())
 	//result, err := crawler(url, dataMap["method"].(string), resp.Header, payload)
