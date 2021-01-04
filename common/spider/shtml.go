@@ -81,13 +81,11 @@ func (s *ShtmlSpider) Do(request Request) (Response, error) {
 			if filterNotHtml(charsetStrs) {
 				body = []byte("content_type is illegal:" + encode)
 			} else {
-				readerCloser := resp.RawBody()
-				buff, err := ReadAll(readerCloser, s.size)
+				buff, err := UnZipRetryResp(resp, s.size)
 				if err != nil {
 					logs.S.Errorw("读取响应数据出错", "err:", err.Error(), "retry", i+1, "url", request.Url)
 					continue
 				}
-				readerCloser.Close()
 				body = charset.MustDecodeBytes(buff, encode)
 			}
 			return Response{

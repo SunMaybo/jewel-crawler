@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"github.com/SunMaybo/jewel-crawler/logs"
 	"golang.org/x/net/proxy"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -159,11 +158,10 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 		logs.S.Errorw("请求超时", "error", err.Error())
 		return nil, err
 	}
-	defer response.Body.Close()
-	data, err := ioutil.ReadAll(response.Body)
+	buff, err := UnZipHttpResp(response, a.size)
 	if err != nil {
 		logs.S.Errorw("读取响应数据出错", "err:", err.Error())
 		return nil, err
 	}
-	return data, nil
+	return buff, nil
 }

@@ -5,7 +5,8 @@ go 1.14
 require (
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
 	github.com/SunMaybo/go-readability v1.2.3
-	github.com/antchfx/htmlquery v1.2.3 // indirect
+	github.com/antchfx/htmlquery v1.2.3
+	// indirect
 	github.com/chromedp/cdproto v0.0.0-20200709115526-d1f6fc58448b
 	github.com/chromedp/chromedp v0.5.3
 	github.com/go-redis/redis/v8 v8.0.0-beta.6
