@@ -2,6 +2,7 @@ package spider
 
 import (
 	"compress/gzip"
+	"github.com/dsnet/compress/brotli"
 	"gopkg.in/resty.v1"
 	"net/http"
 )
@@ -12,6 +13,17 @@ func UnZipRetryResp(response *resty.Response, size int) ([]byte, error) {
 	switch response.Header().Get("Content-Encoding") {
 	case "gzip":
 		reader, err := gzip.NewReader(rawBody)
+		if err != nil {
+			return nil, err
+		}
+		defer reader.Close()
+		buff, err := ReadAll(reader, size)
+		if err != nil {
+			return nil, err
+		}
+		return buff, nil
+	case "br":
+		reader, err := brotli.NewReader(rawBody, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -37,6 +49,17 @@ func UnZipHttpResp(response *http.Response, size int) ([]byte, error) {
 	switch response.Header.Get("Content-Encoding") {
 	case "gzip":
 		reader, err := gzip.NewReader(rawBody)
+		if err != nil {
+			return nil, err
+		}
+		defer reader.Close()
+		buff, err := ReadAll(reader, size)
+		if err != nil {
+			return nil, err
+		}
+		return buff, nil
+	case "br":
+		reader, err := brotli.NewReader(rawBody, nil)
 		if err != nil {
 			return nil, err
 		}

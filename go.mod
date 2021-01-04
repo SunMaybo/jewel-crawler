@@ -5,10 +5,11 @@ go 1.14
 require (
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
 	github.com/SunMaybo/go-readability v1.2.3
-	github.com/antchfx/htmlquery v1.2.3
+	github.com/antchfx/htmlquery v1.2.3 // indirect
 	// indirect
 	github.com/chromedp/cdproto v0.0.0-20200709115526-d1f6fc58448b
 	github.com/chromedp/chromedp v0.5.3
+	github.com/dsnet/compress v0.0.1
 	github.com/go-redis/redis/v8 v8.0.0-beta.6
 	github.com/gogs/chardet v0.0.0-20191104214054-4b6791f73a28
 	github.com/json-iterator/go v1.1.10 // indirect

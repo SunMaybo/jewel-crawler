@@ -9,7 +9,7 @@ import (
 func TestNewShtmlSpider(t *testing.T) {
 	sp := NewFileSpider(5 * 1024 * 1024)
 	resp, err := sp.Do(Request{
-		Url:    "https://36kr.com/p/1039670953339136",
+		Url:    "https://m.youtube.com",
 		Method: "GET",
 		Headers: map[string]string{
 			"accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
@@ -22,6 +22,9 @@ func TestNewShtmlSpider(t *testing.T) {
 			"sec-fetch-site":            "none",
 			"sec-fetch-user":            "?1",
 			"upgrade-insecure-requests": "1",
+		},
+		ProxyCallBack: func() string {
+			return "http://127.0.0.1:7890"
 		},
 		Timeout: 30 * time.Second,
 	})
