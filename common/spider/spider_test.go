@@ -7,9 +7,9 @@ import (
 )
 
 func TestNewShtmlSpider(t *testing.T) {
-	sp := NewFileSpider(5 * 1024 * 1024)
+	sp := NewShtmlSpider(5 * 1024 * 1024)
 	resp, err := sp.Do(Request{
-		Url:    "https://m.youtube.com",
+		Url:    "https://m.kooora.com/?n=990171&o=n",
 		Method: "GET",
 		Headers: map[string]string{
 			"accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",

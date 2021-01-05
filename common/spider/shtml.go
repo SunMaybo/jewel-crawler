@@ -181,6 +181,7 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 }
 
 // 识别响应头编码方式
+//&& strings.Index("gbk,gb18030,gb2312,utf8,utf-8,ansi,big5,unicode,ascii,windows-1256", strings.ToLower(findResult[1])) != -1
 func getResponseCharset(response *resty.Response) string {
 	charsetStrs := response.Header()["Content-Type"]
 	if charsetStrs == nil {
@@ -192,7 +193,7 @@ func getResponseCharset(response *resty.Response) string {
 			for _, value := range regexpArr {
 				reg := regexp.MustCompile(value) // 进行正则编译
 				findResult := reg.FindStringSubmatch(charsetStr)
-				if findResult != nil && len(findResult) > 1 && findResult[1] != "" && strings.Index("gbk,gb18030,gb2312,utf8,utf-8,ansi,big5,unicode,ascii", strings.ToLower(findResult[1])) != -1 {
+				if findResult != nil && len(findResult) > 1 && findResult[1] != "" {
 					charsetStr = findResult[1]
 					logs.S.Infow("response header find charset ------>", "charset", charsetStr)
 					return charsetStr
