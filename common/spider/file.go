@@ -136,7 +136,7 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 	} else {
 		req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
 	}
-	r.Header.Add("accept-encoding","gzip, deflate, br")
+	req.Header.Add("accept-encoding","gzip, deflate, br")
 	response, err := client.Do(req)
 	if err != nil {
 		logs.S.Errorw("请求超时", "error", err.Error())
