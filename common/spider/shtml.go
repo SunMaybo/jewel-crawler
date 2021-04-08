@@ -176,6 +176,7 @@ func (s *ShtmlSpider) getResponse(request Request) (*resty.Response, error) {
 	} else {
 		r.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
 	}
+	r.Header.Add("accept-encoding","gzip, deflate, br")
 	resp, err := r.Get(request.Url)
 	return resp, err
 }
