@@ -57,11 +57,13 @@ func (a *ApiSpider) Do(request Request) (Response, error) {
 	var err error
 	for i := 0; i < request.Retry; i++ {
 		var body []byte
-		body, err = a.getResponse(request)
+		var header http.Header
+		body,header, err = a.getResponse(request)
 		if err == nil {
 			resp := Response{
 				body:       body,
 				SpiderType: a.spiderType,
+				Header: header,
 			}
 			return resp, nil
 		} else {
@@ -122,12 +124,12 @@ func (a *ApiSpider) getClient(request Request) (*http.Client, error) {
 	return client, nil
 }
 
-func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
+func (a *ApiSpider) getResponse(request Request) ([]byte, http.Header, error) {
 
 	req, err := http.NewRequest(request.Method, request.Url, bytes.NewReader([]byte(request.Param)))
 	if err != nil {
 		logs.S.Errorw("请求数据出错", "error", err.Error())
-		return nil, err
+		return nil, nil, err
 	}
 	if request.CookieCallBack != nil {
 		for _, cookie := range request.CookieCallBack() {
@@ -149,20 +151,20 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, error) {
 	} else {
 		req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:76.0) Gecko/20100101 Firefox/76.0")
 	}
-	req.Header.Add("accept-encoding","gzip, deflate, br")
+	req.Header.Add("accept-encoding", "gzip, deflate, br")
 	client, err := a.getClient(request)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	response, err := client.Do(req)
 	if err != nil {
 		logs.S.Errorw("请求超时", "error", err.Error())
-		return nil, err
+		return nil, nil, err
 	}
 	buff, err := UnZipHttpResp(response, a.size)
 	if err != nil {
 		logs.S.Errorw("读取响应数据出错", "err:", err.Error())
-		return nil, err
+		return nil, nil, err
 	}
-	return buff, nil
+	return buff, response.Header, nil
 }
