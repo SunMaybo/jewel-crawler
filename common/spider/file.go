@@ -144,7 +144,6 @@ func (f *FileSpider) getResponse(request Request) ([]byte, error) {
 	}
 	buff, err := UnZipHttpResp(response, f.size)
 	if err != nil {
-		logs.S.Errorw("读取响应数据出错", "err:", err.Error())
 		return nil, err
 	}
 	return buff, nil

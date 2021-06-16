@@ -163,7 +163,6 @@ func (a *ApiSpider) getResponse(request Request) ([]byte, http.Header, error) {
 	}
 	buff, err := UnZipHttpResp(response, a.size)
 	if err != nil {
-		logs.S.Errorw("读取响应数据出错", "err:", err.Error())
 		return nil, nil, err
 	}
 	return buff, response.Header, nil
